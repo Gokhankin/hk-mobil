@@ -343,6 +343,17 @@
             opacity: 0.85;
         }
 
+        .summary-item.kpi-active, .guest-summary-item.kpi-active {
+            outline: 2.5px solid #4f46e5;
+            outline-offset: 2px;
+            transform: scale(1.04);
+            box-shadow: 0 0 12px rgba(79, 70, 229, 0.4);
+        }
+        body.dark-mode .summary-item.kpi-active, body.dark-mode .guest-summary-item.kpi-active {
+            outline-color: #a5b4fc;
+            box-shadow: 0 0 12px rgba(165, 180, 252, 0.4);
+        }
+
         .summary-value, .guest-value {
             font-size: 0.88rem;
             font-weight: 900;
@@ -1378,8 +1389,37 @@
 
         let activeFilter = null;
 
+        function updateKpiHighlights() {
+            const statusKpis = ['kpiKirli', 'kpiTemiz', 'kpiOoo', 'kpiBlocked'];
+            statusKpis.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('kpi-active');
+            });
+
+            const guestKpis = ['kpiGelen', 'kpiGidecek', 'kpiInhouse'];
+            guestKpis.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('kpi-active');
+            });
+
+            let activeId = null;
+            if (activeFilter === 'KİRLİ') activeId = 'kpiKirli';
+            else if (activeFilter === 'TEMİZ') activeId = 'kpiTemiz';
+            else if (activeFilter === 'OOO') activeId = 'kpiOoo';
+            else if (activeFilter === 'BLOKELİ') activeId = 'kpiBlocked';
+            else if (activeFilter === 'GELEN') activeId = 'kpiGelen';
+            else if (activeFilter === 'GIDECEK') activeId = 'kpiGidecek';
+            else if (activeFilter === 'INHOUSE') activeId = 'kpiInhouse';
+
+            if (activeId) {
+                const activeEl = document.getElementById(activeId);
+                if (activeEl) activeEl.classList.add('kpi-active');
+            }
+        }
+
         function resetAllFilters() {
             activeFilter = null;
+            updateKpiHighlights();
             if (document.getElementById('searchRoomInput')) {
                 document.getElementById('searchRoomInput').value = '';
                 document.getElementById('searchClearBtn').style.display = 'none';
@@ -1388,6 +1428,7 @@
         }
 
         function applyCurrentFilter() {
+            updateKpiHighlights();
             if (!activeFilter) {
                 renderGrid(currentData);
                 return;
