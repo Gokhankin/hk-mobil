@@ -59,6 +59,78 @@ HK çalışanlarının otel operasyonundayken telefonlarından (Ngrok aracılı�
 - **Giriş Şifresi:** PIN şifresi **`123`** olarak güncellendi.
 - **Canlı Sunucu Güncellemesi:** Değişiklikler canlı Society sunucusuna (`192.168.0.128`) aktarıldı ve `/home/society/Masaüstü/hk_mobil/venv/bin/python3` ile servis yeniden başlatıldı.
 
+## 8. Tıklanabilir Müşteri KPI Filtreleme ve Sıfırlama Özellikleri (Ağustos 2026)
+- **Etkileşimli Müşteri KPI Kartları:**
+  - **Gelen Müşteri**, **Gidecek Müşteri** ve **Inhouse Müşteri** kartlarına tıklama özelliği eklendi.
+  - Kartlara tıklandığında alt oda grid alanı otomatik süzülerek ilgili gruba giren odaları anında listeler.
+- **SQL ve KPI Veri Senkronizasyonu Hata Düzeltmesi:**
+  - Üst sayaç sayısıyla tıklayınca çıkan oda sayısındaki uyumsuzluğu gidermek için `queries_hk.py` içerisindeki `BUGUN_GELEN`, `BUGUN_GIDECEK` ve `DOLU_BOS` SQL alt sorguları, üstteki `get_guest_stats` sorgusuyla birebir eşleştirildi (`Status` & `StatusCode` filtrelenmesi, No-Show temizliği vb.).
+- **Filtre Sıfırlama & Varsayılana Dönüş:**
+  - **Sol Üst Logo / Başlık:** `CC HK` başlığına basıldığında tüm aktif süzgeçler ve arama kelimeleri temizlenerek varsayılan tüm oda listesine dönülür.
+  - **Aynı Karta Tekrar Basma:** Seçili süzgeç kartına ikinci kez basıldığında filtre otomatik olarak kaldırılır.
 
+## 9. Temel Operasyonel Tasarım ve Veri Tutarlılığı Prensibi (Ağustos 2026)
+- **Tek Gerçek Kaynak (Single Source of Truth):** Projelerde yeni iş mantığı uydurmak veya varsayımda bulunmak kesinlikle yasaktır. Gerçeğin tek kaynağı Sedna veritabanı (SQL Server) ve Sedna Front Office iş kurallarıdır.
+- **Sedna Görselleştirme Misyonu:** Uygulamalarımızın tek ve asli görevi; Sedna ve SQL sorgularının ürettiği durum ve verileri, en doğru formatta ve en göz alıcı/kullanıcı dostu mobil KPI arayüzleri ile sahada operasyon yapan kullanıcıya anlık yansıtmaktır.
+- **Canlı Veri Senkronizasyonu & Filtre Mantığı:**
+  - Örneğin Sedna'da bir oda çıkış yaptığında (`Status 2 -> 3`), Gidecek Müşteri KPI kartı (10'dan 9'a) ve tıklanınca süzülen oda listesi anında %100 eşzamanlı olarak 9 odaya düşer.
+  - Sayfa yenilendiğinde veya otomatik güncellendiğinde kullanıcı tarafından seçilmiş olan aktif filtre state'i (`applyCurrentFilter()`) korunur.
 
+## 10. Acente Bilgisi, C/O Çıkış Durumu ve Uzatma Saati Entegrasyonu (Ağustos 2026)
+- **Acente Bilgisi (C/N ve Genel Odalar):**
+  - `queries_hk.py` içerisindeki `Reservation` sorgusuna `LEFT JOIN Agency a ON res.AgencyId = a.RecId` eklenerek `ACENTE` adı çekildi.
+  - C/N (Giriş yapacak) odalarda ve oda kartlarında acente bilgisi (Örn: `🏢 NEILSON`, `🏢 EXPEDIA`, `🏢 BOOKING`) etiketi ile görselleştirildi.
+  - Oda durum değiştirme güvenlik pop-up modalında müşteri detay kartına **Acente** bilgisi eklendi.
+- **C/O Odası Çıkış Durumu (Çıkış Yapıldı mı / Odada Hâlâ mı?):**
+  - Bugün ayrılacak (C/O) odaların Sedna `Reservation.Status` değeri kontrol edildi:
+    - `Status = 3` ➔ **🟢 ÇIKIŞ YAPILDI (C/O Yapıldı)**
+    - `Status = 2` ➔ **🔴 HENÜZ ÇIKIŞ YAPMADI (Odada Hâlâ)**
+  - Hem oda kartlarında canlı rozet etiketi olarak, hem de detay modalında büyük bilgilendirme kartı olarak gösterilmesi sağlandı.
+- **Geç Çıkış / Uzatma Saati (Late Check-Out / Extension):**
+  - `Reservation.LateCOut` sütunu sorguya dahil edilerek standart checkout (12:00) haricinde tanımlanan özel uzatma saatleri (Örn: `16:00`) tespit edildi.
+  - Uzatması olan odaların kartlarına saat ikonlu **⏰ 16:00** rozeti eklendi.
+  - Güvenlik modalında sarı/altın vurgulu **"GEÇ ÇIKIŞ / UZATMA SAATI: 16:00"** uyarı kutusu yerleştirildi.
 
+## 11. Mobil Header 4-Satır Yapısı & Masaüstü Eşit Oda Kutuları Düzenlemesi (Ağustos 2026)
+- **Eşit KPI Kart Boyutları (Mobilde 4 Satır Düzeni):**
+  - Hem `.summary-item` (Oda durumları) hem de `.guest-summary-item` (Müşteri sayıları) kartlarına sabit `height: 44px`, eşit `border-radius: 10px`, aynı font ölçeklendirmeleri uygulandı.
+  - Mobil header alanı ekran yüksekliğini kaplamayacak şekilde tam 4 düzenli satıra oturtuldu:
+    - **Satır 1:** Header başlığı, Maid seçimi, Tema butonu, Çıkış ve Yenile butonları.
+    - **Satır 2:** Müşteri KPI Kartları (Gelen, Gidecek, Inhouse).
+    - **Satır 3:** Oda Durum KPI Kartları (Kirli, Temiz, Arızalı, Blokeli).
+    - **Satır 4:** Oda arama girdisi (`Oda No...`), OK butonu ve Sabah/Akşam vardiya tabları (sıkıştırılmış tek satır).
+- **Masaüstü Eşit Oda Kutucukları:**
+  - Masaüstü ve geniş ekranlarda (`min-width: 520px`) `.grid` yapısına `grid-template-columns: repeat(auto-fill, 108px)` ve `.room-card` elemanına `width: 108px !important; height: 108px !important; aspect-ratio: 1 / 1 !important; overflow: hidden !important;` kuralları uygulandı.
+  - Farklı içerik uzunluğuna sahip oda kartlarının masaüstünde biri büyük biri küçük görünmesi engellendi; tüm kartlar milimetrik eşit kareler olarak sabitlendi.
+- **Mobilde Sağa/Sola Kayma (Horizontal Scroll) ve Taşma Koruması:**
+  - `.grid` için `grid-template-columns: repeat(4, minmax(0, 1fr))` kuralı tanımlanarak hücrelerin içerik genişliği nedeniyle 4 sütundan dışarı genişlemesi kesin olarak engellendi.
+  - `html`, `body`, `.content`, `.header`, `.grid` ve `.room-card` elemanlarına `overflow-x: hidden !important;`, `max-width: 100%;` ve `min-width: 0;` uygulanarak mobilde sağa/sola kayma (scroll) riski sıfırlandı.
+
+## 12. Veri Yükleme Yavaşlığı Optimizasyonu - 30 Kat Hız Artışı (Ağustos 2026)
+- **Neden Yavaştı? (3-4 Saniye Bekleme Analizi):**
+  - `queries_hk.py` içerisindeki `get_hk_status` fonksiyonu, 111 fiziki oda için her seferinde `OUTER APPLY` alt sorgusunda `Reservation` ve `Agency` tablolarında 111 defa ayrı ayrı tarih dönüştürme (`CAST(CheckinDate AS DATE)`), `NOT LIKE '%NOSHOW%'` ve `Agency` tablosuna `LEFT JOIN` atarak veritabanı taraması yapıyordu.
+- **Uygulanan CTE & Row-Number Optimizasyonu:**
+  - Sorgu yapısı `Common Table Expression (CTE)` mimarisine taşındı. `@Today` değişkeni en başta 1 kez tanımlandı.
+  - Bugün aktif reservations tek bir turlamada `ROW_NUMBER() OVER (PARTITION BY MatchRoom ORDER BY ...)` ile index tabanlı filtrelendi.
+- **Sonuç:**
+  - SQL veritabanı oda durum sorgu süresi **3.018 saniyeden 0.106 saniyeye (106 milisaniye)** düşürüldü (**30 kat hızlanma**).
+  - Mobil uygulamanın `/api/hk/data` uç noktasından veri alma ve oda kutucuklarını ekrana basma süresi 4 saniyeden **1 saniyenin altına** indirildi.
+
+## 13. Proje Yedekleme ve C/In & C/Out Tarihleri Entegrasyonu (Ağustos 2026)
+- **Proje Yedeği:**
+  - İşlem öncesinde tüm `hk_mobil` projesi `eski projeler/hk_mobil_backup_20260822` klasörüne eksiksiz yedeklendi.
+- **SQL Sorgu Güncellemesi (`queries_hk.py`):**
+  - `get_hk_status` CTE sorgusuna `CONVERT(VARCHAR(10), res.CheckinDate, 104) AS [CHECKIN_TARIHI]` ve `CONVERT(VARCHAR(10), res.CheckOutDate, 104) AS [CHECKOUT_TARIHI]` sütunları eklendi.
+- **Frontend & Detay Popup Görselleştirmesi (`hk_mobile.html`):**
+  - Güvenli oda durum değiştirme modalına (`#modalGuestDetailCard`) yeşil takvim ikonlu `guest-dates-row` eklendi (`📅 C/In: DD.MM.YYYY ➔ C/Out: DD.MM.YYYY`).
+  - Misafiri olan veya rezervasyonu bulunan tüm odalarda C/In ve C/Out tarihleri mobil ekranda net şekilde gösterildi.
+
+## 14. Dünden Kirli Sarı Tema & Yükleme Hızı Optimizasyonu (Ağustos 2026)
+- **Sarı Tema Güncellemesi:**
+  - Kullanıcı talebi doğrultusunda "Dünden Kirli" kartı, rozeti ve oda kutucuklarının rengi **Sarı / Kehribar (Amber Gold #d97706)** olarak güncellendi.
+  - Üst KPI barına `🧹 Dünden Kirli` butonu eklendi (tıklanınca dünden kalan 10 boş kirli odayı doğrudan süzer).
+  - Oda kartlarının altındaki ana durum etiketi **`DÜNDEN KİRLİ`** olarak ayarlandı.
+  - Modal detay penceresine sarı çerçeveli **`⚠️ DÜNDEN KALAN KİRLİ ODA (Oda Boş)`** uyarısı yerleştirildi.
+- **Yükleme Dönme (Hız) Sorununun Çözümü:**
+  - Backend tarafında fazladan çalışan ağır unoptimized SQL sorgusu kaldırıldı. `bos_kirli` oda sayısı, `df` dataframe üzerinden `len(df[df['BOS_KIRLI'] == 1])` ile milisaniyeler içinde hesaplanacak şekilde optimize edildi.
+  - `hk_server.py` deploy betiğine (`scratch_deploy_hk_mobil.py`) eklenerek canlı sunucudaki (`192.168.0.128:5002`) servis yeniden başlatıldı ve veri yükleme süresi 1 saniyeye indirildi.

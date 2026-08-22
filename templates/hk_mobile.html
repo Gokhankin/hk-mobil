@@ -316,7 +316,7 @@
 
         .guest-summary-bar {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 5px;
             margin-top: 5px;
             margin-bottom: 5px;
@@ -404,6 +404,17 @@
             background: rgba(56, 189, 248, 0.25);
             border: 1px solid rgba(56, 189, 248, 0.5);
             color: #38bdf8;
+        }
+
+        .sum-bos-kirli {
+            background: rgba(245, 158, 11, 0.25);
+            border: 1px solid rgba(251, 191, 36, 0.6);
+            color: #d97706;
+        }
+        body.dark-mode .sum-bos-kirli {
+            color: #fbbf24;
+            background: rgba(245, 158, 11, 0.3);
+            border-color: rgba(251, 191, 36, 0.7);
         }
 
         /* Mobil 4-Sütun Düzeni & Sağa Sola Scroll (Taşma) Engelleme */
@@ -908,6 +919,21 @@
             color: #a5b4fc;
         }
 
+        /* C/In - C/Out Tarih Etiketi (Modal) */
+        .guest-dates-row {
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: #059669;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 3px;
+            word-break: break-word;
+        }
+        body.dark-mode .guest-dates-row {
+            color: #34d399;
+        }
+
         .agency-card-tag {
             font-size: 0.48rem;
             font-weight: 800;
@@ -1061,6 +1087,9 @@
                 <div id="modalAgencyRow" class="guest-agency-row" style="display:none;">
                     <i class="fas fa-building"></i> <span id="modalAgencyName"></span>
                 </div>
+                <div id="modalDatesRow" class="guest-dates-row" style="display:none;">
+                    <i class="fas fa-calendar-alt"></i> <span id="modalDatesText"></span>
+                </div>
                 <div id="modalSpecialNotesBox" class="modal-special-notes" style="display:none;">
                     <i class="fas fa-comment-alt" style="margin-right:4px;"></i> <span id="modalNotesText"></span>
                 </div>
@@ -1119,6 +1148,10 @@
             <div class="guest-summary-item sum-inhouse" id="kpiInhouse" onclick="filterByGuest('INHOUSE')" style="cursor:pointer;" title="Inhouse müşterilerin odalarını listele">
                 <div class="guest-label"><i class="fas fa-bed"></i> Inhouse</div>
                 <div class="guest-value"><span id="countGuestInhOda">0</span> Oda <span class="guest-sub">/ <span id="countGuestInhPax">0</span> Pax</span></div>
+            </div>
+            <div class="guest-summary-item sum-bos-kirli" id="kpiBosKirli" onclick="filterByGuest('BOS_KIRLI')" style="cursor:pointer;" title="Dünden kalan boş kirli odaları listele">
+                <div class="guest-label"><i class="fas fa-broom"></i> Dünden Kirli</div>
+                <div class="guest-value"><span id="countGuestBosKirliOda">0</span> Oda</div>
             </div>
         </div>
 
@@ -1321,7 +1354,7 @@
 
                 if (data.error) throw new Error(data.error);
                 
-                // Update Guest KPI Stats (Gelen / Gidecek / Inhouse)
+                // Update Guest KPI Stats (Gelen / Gidecek / Inhouse / Dünden Kirli)
                 if (data.guest_stats) {
                     document.getElementById('countGuestArrOda').innerText = data.guest_stats.arrivals.oda;
                     document.getElementById('countGuestArrPax').innerText = data.guest_stats.arrivals.pax;
@@ -1329,6 +1362,9 @@
                     document.getElementById('countGuestDepPax').innerText = data.guest_stats.departures.pax;
                     document.getElementById('countGuestInhOda').innerText = data.guest_stats.inhouse.oda;
                     document.getElementById('countGuestInhPax').innerText = data.guest_stats.inhouse.pax;
+                    if (data.guest_stats.bos_kirli && document.getElementById('countGuestBosKirliOda')) {
+                        document.getElementById('countGuestBosKirliOda').innerText = data.guest_stats.bos_kirli.oda;
+                    }
                 }
 
                 currentData = data.items;
@@ -1396,7 +1432,7 @@
                 if (el) el.classList.remove('kpi-active');
             });
 
-            const guestKpis = ['kpiGelen', 'kpiGidecek', 'kpiInhouse'];
+            const guestKpis = ['kpiGelen', 'kpiGidecek', 'kpiInhouse', 'kpiBosKirli'];
             guestKpis.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('kpi-active');
@@ -1410,6 +1446,7 @@
             else if (activeFilter === 'GELEN') activeId = 'kpiGelen';
             else if (activeFilter === 'GIDECEK') activeId = 'kpiGidecek';
             else if (activeFilter === 'INHOUSE') activeId = 'kpiInhouse';
+            else if (activeFilter === 'BOS_KIRLI') activeId = 'kpiBosKirli';
 
             if (activeId) {
                 const activeEl = document.getElementById(activeId);
@@ -1435,13 +1472,14 @@
             }
             const filtered = currentData.filter(item => {
                 let st = item['DURUM'];
-                if (activeFilter === 'KİRLİ') return st === 'KİRLİ';
+                if (activeFilter === 'KİRLİ') return st === 'KİRLİ' || st.includes('K');
                 if (activeFilter === 'TEMİZ') return st === 'TEMİZ';
                 if (activeFilter === 'OOO') return st.includes('ARIZALI') || st.includes('OOO');
                 if (activeFilter === 'BLOKELİ') return st.includes('BLOKELİ');
                 if (activeFilter === 'GELEN') return (item['BUGUN_GELEN'] || 0) > 0;
                 if (activeFilter === 'GIDECEK') return (item['BUGUN_GIDECEK'] || 0) > 0;
                 if (activeFilter === 'INHOUSE') return (item['DOLU_BOS'] || 0) > 0;
+                if (activeFilter === 'BOS_KIRLI') return (item['BOS_KIRLI'] || 0) > 0;
                 return true;
             });
             renderGrid(filtered);
@@ -1537,9 +1575,14 @@
                 let bgColor = 'var(--grey)'; 
                 let currentLabel = statusStr;
 
+                let isBosKirli = item['BOS_KIRLI'] || 0;
                 if (currentShift === 'Morning') {
-                    if (statusStr === 'KİRLİ') {
+                    if (isBosKirli && (statusStr === 'KİRLİ' || statusStr.includes('K'))) {
+                        bgColor = '#d97706';
+                        currentLabel = 'DÜNDEN KİRLİ';
+                    } else if (statusStr === 'KİRLİ' || statusStr.includes('K')) {
                         bgColor = 'var(--red)';
+                        currentLabel = 'KİRLİ';
                     } else if (statusStr === 'TEMİZ') {
                         bgColor = 'var(--green)';
                     } else if (statusStr === 'OK' || statusStr === 'HAZIR / OK' || statusStr === 'HAZIRLANIYOR' || statusStr === 'HAZIR') {
@@ -1578,6 +1621,7 @@
                 if(uzatmaTimeVal) badges += `<div class="badge-uzatma" title="Uzatma Saati: ${uzatmaTimeVal}"><i class="fas fa-clock"></i> ${uzatmaTimeVal}</div>`;
                 badges += '</div>';
 
+                let isBosKirli = item['BOS_KIRLI'] || 0;
                 let coBadgeHtml = '';
                 if (isDeparture && coDurumVal) {
                     if (coDurumVal === 'ÇIKIŞ YAPILDI') {
@@ -1585,6 +1629,8 @@
                     } else if (coDurumVal === 'ODADA HÂLÂ') {
                         coBadgeHtml = `<div class="co-card-badge co-card-inroom"><i class="fas fa-user-clock"></i> ODADA HÂLÂ</div>`;
                     }
+                } else if (isBosKirli && (statusStr === 'KİRLİ' || statusStr.includes('K'))) {
+                    coBadgeHtml = `<div class="co-card-badge co-card-inroom" style="background:#d97706; color:#fff;" title="Dünden Kirli / Boş"><i class="fas fa-broom"></i> DÜNDEN KİRLİ</div>`;
                 }
 
                 let agencyBadgeHtml = '';
@@ -1632,14 +1678,19 @@
             const nBox = document.getElementById('modalSpecialNotesBox');
             const nText = document.getElementById('modalNotesText');
 
+            const dRow = document.getElementById('modalDatesRow');
+            const dText = document.getElementById('modalDatesText');
+
             const guestNameVal = roomObj['MISAFIR_ADI'] || '';
             const bedTypeVal = roomObj['YATAK_TIPI'] || '';
             const agencyVal = roomObj['ACENTE'] || '';
+            const checkinVal = roomObj['CHECKIN_TARIHI'] || '';
+            const checkoutVal = roomObj['CHECKOUT_TARIHI'] || '';
             const rezNotuVal = roomObj['REZ_NOTU'] || '';
             const coDurumVal = roomObj['CO_DURUM'] || '';
             const uzatmaTimeVal = formatUzatmaSaati(roomObj['UZATMA_SAATI']);
 
-            if (guestNameVal || bedTypeVal || agencyVal || rezNotuVal) {
+            if (guestNameVal || bedTypeVal || agencyVal || checkinVal || checkoutVal || rezNotuVal) {
                 gCard.style.display = 'flex';
                 gName.innerText = guestNameVal || 'Boş Oda / Atanmadı';
                 
@@ -1657,6 +1708,13 @@
                     aRow.style.display = 'none';
                 }
 
+                if (checkinVal || checkoutVal) {
+                    dText.innerText = `C/In: ${checkinVal || '-'} ➔ C/Out: ${checkoutVal || '-'}`;
+                    dRow.style.display = 'flex';
+                } else {
+                    dRow.style.display = 'none';
+                }
+
                 if (rezNotuVal) {
                     nText.innerText = rezNotuVal;
                     nBox.style.display = 'block';
@@ -1669,12 +1727,15 @@
 
             // C/O Status Box
             const coBox = document.getElementById('modalCOStatusBox');
+            const isBosKirli = roomObj['BOS_KIRLI'] || 0;
             if (coDurumVal) {
                 if (coDurumVal === 'ÇIKIŞ YAPILDI') {
                     coBox.innerHTML = `<div class="co-status-badge co-done"><i class="fas fa-check-circle fa-lg"></i> <span><strong>C/O ÇIKIŞ YAPILDI</strong> (Oda Boşaltıldı)</span></div>`;
                 } else if (coDurumVal === 'ODADA HÂLÂ') {
                     coBox.innerHTML = `<div class="co-status-badge co-inroom"><i class="fas fa-user-clock fa-lg"></i> <span><strong>HENÜZ ÇIKIŞ YAPMADI</strong> (Odada Hâlâ)</span></div>`;
                 }
+            } else if (isBosKirli && (roomObj['DURUM'] === 'KİRLİ' || (roomObj['DURUM'] || '').includes('K'))) {
+                coBox.innerHTML = `<div class="co-status-badge co-inroom" style="background:rgba(245, 158, 11, 0.18); border:1.5px solid #f59e0b; color:#b45309;"><i class="fas fa-exclamation-circle fa-lg"></i> <span><strong>DÜNDEN KALAN KİRLİ ODA</strong> (Oda Boş)</span></div>`;
             } else {
                 coBox.innerHTML = '';
             }

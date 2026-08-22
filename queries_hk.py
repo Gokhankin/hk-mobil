@@ -52,10 +52,13 @@ def get_hk_status(conn) -> pd.DataFrame:
             ISNULL(res.FirstName1, '') + ' ' + ISNULL(res.LastName1, '') AS [MISAFIR_ADI],
             ISNULL(res.BedType, '') AS [YATAK_TIPI],
             ISNULL(res.Acente, '') AS [ACENTE],
+            CASE WHEN res.CheckinDate IS NOT NULL THEN CONVERT(VARCHAR(10), res.CheckinDate, 104) ELSE '' END AS [CHECKIN_TARIHI],
+            CASE WHEN res.CheckOutDate IS NOT NULL THEN CONVERT(VARCHAR(10), res.CheckOutDate, 104) ELSE '' END AS [CHECKOUT_TARIHI],
             CASE WHEN ISNULL(res.Remark, '') <> '' THEN res.Remark ELSE res.ResRemark END AS [REZ_NOTU],
             CASE WHEN res.Status = 2 AND CAST(res.CheckinDate AS DATE) <= @Today AND CAST(res.CheckOutDate AS DATE) >= @Today THEN 1 ELSE 0 END AS [DOLU_BOS],
             CASE WHEN res.Status = 1 AND CAST(res.CheckinDate AS DATE) = @Today THEN 1 ELSE 0 END AS [BUGUN_GELEN],
             CASE WHEN (res.Status = 2 OR res.Status = 3) AND CAST(res.CheckOutDate AS DATE) = @Today THEN 1 ELSE 0 END AS [BUGUN_GIDECEK],
+            CASE WHEN (rm.DirtyClean = 1 OR rm.HkStatus = 1) AND res.RecId IS NULL THEN 1 ELSE 0 END AS [BOS_KIRLI],
             CASE 
                 WHEN CAST(res.CheckOutDate AS DATE) = @Today AND res.Status = 3 THEN 'ÇIKIŞ YAPILDI'
                 WHEN CAST(res.CheckOutDate AS DATE) = @Today AND res.Status = 2 THEN 'ODADA HÂLÂ'

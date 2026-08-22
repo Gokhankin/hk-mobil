@@ -4,33 +4,39 @@ from flask import Flask, render_template, jsonify, request, make_response
 
 app = Flask(__name__)
 
-# Environment Secret Loader (.env)
-env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
-try:
-    from dotenv import load_dotenv
-    load_dotenv(dotenv_path=env_path)
-except ImportError:
-    if os.path.exists(env_path):
-        with open(env_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    k, v = line.split('=', 1)
-                    os.environ[k.strip()] = v.strip()
+import sys
 
-# Database Connection Secret String loaded from environment
-CONN_STR = os.getenv(
-    "CONN_STR",
-    f"DRIVER={os.getenv('DB_DRIVER', '{ODBC Driver 18 for SQL Server}')};"
-    f"SERVER={os.getenv('DB_SERVER', '192.168.0.41,1433')};"
-    f"DATABASE={os.getenv('DB_NAME', 'SednaAdakoy')};"
-    f"UID={os.getenv('DB_USER', 'gokhan')};"
-    f"PWD={os.getenv('DB_PASS', 'Ad!!2025!!')};"
-    "TrustServerCertificate=yes;"
-)
+# Ensure central config is importable
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sedna_cloud_dir = os.path.join(parent_dir, 'sedna_cloud_backup')
+if sedna_cloud_dir not in sys.path:
+    sys.path.insert(0, sedna_cloud_dir)
+
+try:
+    from config import get_db_connection_string
+    CONN_STR = get_db_connection_string()
+except Exception:
+    CONN_STR = os.getenv("SEDNA_DB_CONN_STR", "DRIVER={ODBC Driver 18 for SQL Server};SERVER=192.168.0.41,1433;DATABASE=SednaAdakoy;UID=gokhan;PWD=Ad!!2025!!;TrustServerCertificate=yes;")
+
+_global_conn = None
 
 def get_connection():
-    return pyodbc.connect(CONN_STR)
+    global _global_conn
+    if _global_conn is not None:
+        try:
+            cursor = _global_conn.cursor()
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+            return _global_conn
+        except Exception:
+            try:
+                _global_conn.close()
+            except Exception:
+                pass
+            _global_conn = None
+            
+    _global_conn = pyodbc.connect(CONN_STR, timeout=5)
+    return _global_conn
 
 @app.route('/')
 def home():
@@ -42,12 +48,13 @@ def home():
 
 @app.route('/api/hk/data')
 def get_data():
-    conn = None
     try:
         import queries_hk as queries
         conn = get_connection()
         df = queries.get_hk_status(conn)
         guest_stats = queries.get_guest_stats(conn)
+        bos_kirli_cnt = len(df[df['BOS_KIRLI'] == 1]) if 'BOS_KIRLI' in df.columns else 0
+        guest_stats['bos_kirli'] = {'oda': int(bos_kirli_cnt)}
         items = df.to_dict(orient='records')
         return jsonify({
             "connected": True,
@@ -62,12 +69,10 @@ def get_data():
             "guest_stats": {
                 "arrivals": {"oda": 0, "pax": 0},
                 "departures": {"oda": 0, "pax": 0},
-                "inhouse": {"oda": 0, "pax": 0}
+                "inhouse": {"oda": 0, "pax": 0},
+                "bos_kirli": {"oda": 0}
             }
         })
-    finally:
-        if conn:
-            conn.close()
 
 @app.route('/api/hk/maids')
 def get_maids():
