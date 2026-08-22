@@ -125,12 +125,20 @@ HK çalışanlarının otel operasyonundayken telefonlarından (Ngrok aracılı�
   - Güvenli oda durum değiştirme modalına (`#modalGuestDetailCard`) yeşil takvim ikonlu `guest-dates-row` eklendi (`📅 C/In: DD.MM.YYYY ➔ C/Out: DD.MM.YYYY`).
   - Misafiri olan veya rezervasyonu bulunan tüm odalarda C/In ve C/Out tarihleri mobil ekranda net şekilde gösterildi.
 
-## 14. Dünden Kirli Sarı Tema & Yükleme Hızı Optimizasyonu (Ağustos 2026)
-- **Sarı Tema Güncellemesi:**
-  - Kullanıcı talebi doğrultusunda "Dünden Kirli" kartı, rozeti ve oda kutucuklarının rengi **Sarı / Kehribar (Amber Gold #d97706)** olarak güncellendi.
-  - Üst KPI barına `🧹 Dünden Kirli` butonu eklendi (tıklanınca dünden kalan 10 boş kirli odayı doğrudan süzer).
-  - Oda kartlarının altındaki ana durum etiketi **`DÜNDEN KİRLİ`** olarak ayarlandı.
-  - Modal detay penceresine sarı çerçeveli **`⚠️ DÜNDEN KALAN KİRLİ ODA (Oda Boş)`** uyarısı yerleştirildi.
-- **Yükleme Dönme (Hız) Sorununun Çözümü:**
-  - Backend tarafında fazladan çalışan ağır unoptimized SQL sorgusu kaldırıldı. `bos_kirli` oda sayısı, `df` dataframe üzerinden `len(df[df['BOS_KIRLI'] == 1])` ile milisaniyeler içinde hesaplanacak şekilde optimize edildi.
-  - `hk_server.py` deploy betiğine (`scratch_deploy_hk_mobil.py`) eklenerek canlı sunucudaki (`192.168.0.128:5002`) servis yeniden başlatıldı ve veri yükleme süresi 1 saniyeye indirildi.
+## 15. Dünden Kirli Mantığı ve Oda Durum Eşitleme Düzeltmesi (Ağustos 2026)
+- **Sorun:** 
+  - Bugün çıkış yapıp temizlenen (OK alınan), ardından bugün yeni giriş olan veya öğleden sonra tekrar kirlenen (RC / Re-Clean) odalar (Örn: Oda 114 ve 424), sistem tarafından hatalı şekilde "DÜNDEN KİRLİ" (Sarı / Kehribar kart) olarak gösteriliyordu.
+  - Ayrıca oda HK Mobil uygulamasında `HAZIR (OK)` olarak işaretlendiğinde, SQL sorgusundaki `CASE` sıralaması nedeniyle `DURUM` etiketi `'OK'` yerine `'TEMIZ'` olarak dönüyor, bu da arayüzde `HAZIR` yerine `TEMİZ` olarak görünüyordu.
+- **Çözüm ve Güncellemeler:**
+  1. **SQL `BOS_KIRLI` Mantığı Sertleştirildi (`queries_hk.py`):**
+     - Bir odanın "DÜNDEN KİRLİ" kabul edilebilmesi için; odanın Kirli olması, **ve** bugün Girişi (`BUGUN_GELEN = 0`), Çıkışı (`BUGUN_GIDECEK = 0`) veya Inhouse konaklaması (`DOLU_BOS = 0`) **olmaması** kuralı bağlandı.
+     - Bugün hareketi (C/In, C/Out, Inhouse) bulunan tüm odalar tekrar kirlendiğinde (RC olduğunda) "Dünden Kirli" bayrağı sıfırlanıp normal **KİRLİ** (Kırmızı kart `#f43f5e`) olarak görüntülenmesi sağlandı.
+  2. **SQL `DURUM` Öncelik Mantığı Düzenlendi (`queries_hk.py`):**
+     - SQL sorgusundaki `CASE` bloğunda `rm.HkStatus = 3` (`'OK'`) koşulu `rm.DirtyClean = 0` (`'TEMIZ'`) koşulunun üstüne alındı.
+     - Böylece HK Mobile uygulamasından `HAZIR (OK)` tıklanan odalar tam ve doğru şekilde `HAZIR` (Sarı/Gold `#f59e0b` kart) durumuna geçti.
+  3. **Frontend Savunma Kontrolü (`hk_mobile.html`):**
+     - Frontend `renderGrid` fonksiyonunda `isBosKirli` mantığı; bugün gelişi, gidişi veya inhouse konaklayanı olan odaları "Dünden Kirli" kartından muaf tutacak şekilde korumaya alındı.
+  4. **Canlı Sunucu Deployment:**
+     - Değişiklikler canlı Society sunucusuna (`192.168.0.128:5002`) aktarılarak Flask servisi yeniden başlatıldı. 
+     - `/api/hk/data` uç noktasından yapılan canlı testlerde `BOS_KIRLI` oda sayısı tam olarak 7 fiziki boş kirli odaya sabitlendi.
+

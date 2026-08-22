@@ -43,6 +43,15 @@ def get_hk_status(conn) -> pd.DataFrame:
                    ROW_NUMBER() OVER (PARTITION BY Room ORDER BY RecId DESC) AS rn
             FROM DailyDetail
             WHERE CAST(StayDate AS DATE) = @Today
+        ),
+        TodayRC AS (
+            SELECT DISTINCT Room
+            FROM (
+                SELECT OldRoom AS Room FROM RoomChangePlan WHERE (CAST(RCDate AS DATE) = @Today OR CAST(RecordDate AS DATE) = @Today)
+                UNION
+                SELECT NewRoom AS Room FROM RoomChangePlan WHERE (CAST(RCDate AS DATE) = @Today OR CAST(RecordDate AS DATE) = @Today)
+            ) rc_all
+            WHERE ISNULL(Room, '') <> ''
         )
         SELECT 
             rm.Room AS [ODA],
@@ -58,7 +67,26 @@ def get_hk_status(conn) -> pd.DataFrame:
             CASE WHEN res.Status = 2 AND CAST(res.CheckinDate AS DATE) <= @Today AND CAST(res.CheckOutDate AS DATE) >= @Today THEN 1 ELSE 0 END AS [DOLU_BOS],
             CASE WHEN res.Status = 1 AND CAST(res.CheckinDate AS DATE) = @Today THEN 1 ELSE 0 END AS [BUGUN_GELEN],
             CASE WHEN (res.Status = 2 OR res.Status = 3) AND CAST(res.CheckOutDate AS DATE) = @Today THEN 1 ELSE 0 END AS [BUGUN_GIDECEK],
-            CASE WHEN (rm.DirtyClean = 1 OR rm.HkStatus = 1) AND res.RecId IS NULL THEN 1 ELSE 0 END AS [BOS_KIRLI],
+            CASE 
+                WHEN (rm.DirtyClean = 1 OR rm.HkStatus = 1) 
+                     AND rm.HkStatus NOT IN (4, 5)
+                     AND ISNULL(dd.[Status], 0) NOT IN (3, 4)
+                     AND res.RecId IS NULL 
+                     AND rc.Room IS NULL
+                     AND NOT EXISTS (
+                         SELECT 1 FROM Reservation r_chk 
+                         LEFT JOIN Room rm_chk ON r_chk.RoomNummer = rm_chk.RecId
+                         WHERE (r_chk.Room = rm.Room OR rm_chk.Room = rm.Room)
+                           AND r_chk.StatusCode IN (0,1,2,3)
+                           AND r_chk.Status IN (1,2,3)
+                           AND (
+                               CAST(r_chk.CheckinDate AS DATE) = @Today 
+                               OR CAST(r_chk.CheckOutDate AS DATE) = @Today
+                               OR (CAST(r_chk.CheckinDate AS DATE) <= @Today AND CAST(r_chk.CheckOutDate AS DATE) >= @Today)
+                           )
+                     )
+                THEN 1 ELSE 0 
+            END AS [BOS_KIRLI],
             CASE 
                 WHEN CAST(res.CheckOutDate AS DATE) = @Today AND res.Status = 3 THEN 'CO_YAPILDI'
                 WHEN CAST(res.CheckOutDate AS DATE) = @Today AND res.Status = 2 THEN 'ODADA_HALA'
@@ -69,13 +97,11 @@ def get_hk_status(conn) -> pd.DataFrame:
             CASE 
                 WHEN dd.[Status] = 4 THEN 'ARIZALI (OOO)'
                 WHEN dd.[Status] = 3 THEN 'BLOKELI'
-                WHEN rm.DirtyClean = 1 THEN 'KIRLI'
-                WHEN rm.DirtyClean = 0 THEN 'TEMIZ'
-                WHEN rm.HkStatus = 1 THEN 'KIRLI'
-                WHEN rm.HkStatus = 2 THEN 'TEMIZ'
-                WHEN rm.HkStatus = 3 THEN 'OK'
                 WHEN rm.HkStatus = 4 THEN 'ARIZALI (OOO)'
                 WHEN rm.HkStatus = 5 THEN 'BLOKELI'
+                WHEN rm.HkStatus = 3 THEN 'OK'
+                WHEN rm.DirtyClean = 1 OR rm.HkStatus = 1 THEN 'KIRLI'
+                WHEN rm.DirtyClean = 0 OR rm.HkStatus = 2 THEN 'TEMIZ'
                 ELSE 'KIRLI'
             END AS [DURUM],
             CASE 
@@ -85,6 +111,7 @@ def get_hk_status(conn) -> pd.DataFrame:
         FROM Room rm
         LEFT JOIN ActiveRes res ON rm.Room = res.MatchRoom AND res.rn = 1
         LEFT JOIN TodayDD dd ON rm.Room = dd.Room AND dd.rn = 1
+        LEFT JOIN TodayRC rc ON rm.Room = rc.Room
         WHERE rm.ForeCast = 1
         ORDER BY rm.Room
     """, conn)
@@ -93,11 +120,11 @@ def get_hk_status(conn) -> pd.DataFrame:
     # Robust normalization of status fields
     if 'DURUM' in df.columns:
         df['DURUM'] = df['DURUM'].astype(str).apply(
-            lambda s: 'KIRLI' if 'K' in s.upper() and 'OK' not in s.upper() and 'ARIZALI' not in s.upper() and 'BLOK' not in s.upper()
-            else ('TEMIZ' if 'TEM' in s.upper()
+            lambda s: 'ARIZALI (OOO)' if 'ARIZ' in s.upper() or 'OOO' in s.upper()
             else ('BLOKELI' if 'BLOK' in s.upper()
-            else ('ARIZALI (OOO)' if 'ARIZ' in s.upper() or 'OOO' in s.upper()
-            else ('OK' if 'OK' in s.upper() else s))))
+            else ('OK' if s.upper() == 'OK' or 'HAZIR' in s.upper()
+            else ('TEMIZ' if 'TEM' in s.upper()
+            else ('KIRLI' if 'K' in s.upper() else s))))
         )
     return df
 
@@ -130,8 +157,8 @@ def set_hk_status(conn, room: str, status: int, maid_code: str = None):
     # Sedna standartları: DirtyClean (1 = Kirli, 0 = Temiz)
     dirty_clean = 1 if status in [1, 4, 5] else 0
     
-    # HkStatus 0 = Normal. (2 değeri Sedna Front Office ekranında Kırmızı S/O (Second OK/Supervisor) uyarısı üretir)
-    hk_status_val = status if status in [3, 4, 5] else 0
+    # HkStatus 1 = Kirli, 3 = OK/Hazır, 4 = OOO, 5 = Blokeli, 0 = Normal/Temiz
+    hk_status_val = status if status in [1, 3, 4, 5] else 0
     
     # DD Status Mapping: 4=OOO, 3=Blocked, 0=Neutral
     dd_status = 0

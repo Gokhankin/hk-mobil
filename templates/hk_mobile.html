@@ -74,7 +74,7 @@
             flex: 1;
             overflow-y: auto;
             overflow-x: hidden !important;
-            padding: 6px;
+            padding: 6px 6px 140px 6px !important;
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
@@ -458,6 +458,7 @@
             max-width: 100%;
             box-sizing: border-box;
             overflow-x: hidden;
+            padding-bottom: 140px !important;
         }
 
         @media (min-width: 520px) {
@@ -1641,20 +1642,20 @@
                 let bgColor = 'var(--grey)'; 
                 let currentLabel = isKirli(statusStr) ? 'KİRLİ' : (isTemiz(statusStr) ? 'TEMİZ' : (isOOO(statusStr) ? 'OOO' : (isBlokeli(statusStr) ? 'BLOKELİ' : statusStr)));
 
-                let isBosKirli = item['BOS_KIRLI'] || 0;
+                let isBosKirli = (item['BOS_KIRLI'] || 0) === 1 && (item['BUGUN_GELEN'] || 0) === 0 && (item['BUGUN_GIDECEK'] || 0) === 0 && (item['DOLU_BOS'] || 0) === 0 && isKirli(statusStr);
                 if (currentShift === 'Morning') {
-                    if (isBosKirli && isKirli(statusStr)) {
+                    if (isBosKirli) {
                         bgColor = '#d97706';
                         currentLabel = 'DÜNDEN KİRLİ';
-                    } else if (isKirli(statusStr)) {
-                        bgColor = 'var(--red)';
-                        currentLabel = 'KİRLİ';
-                    } else if (isTemiz(statusStr)) {
-                        bgColor = 'var(--green)';
-                        currentLabel = 'TEMİZ';
                     } else if (isOK(statusStr)) {
                         bgColor = 'var(--yellow)';
                         currentLabel = 'HAZIR';
+                    } else if (isTemiz(statusStr)) {
+                        bgColor = 'var(--green)';
+                        currentLabel = 'TEMİZ';
+                    } else if (isKirli(statusStr)) {
+                        bgColor = 'var(--red)';
+                        currentLabel = 'KİRLİ';
                     } else if (isOOO(statusStr)) {
                         bgColor = 'var(--dark-grey)';
                         currentLabel = 'OOO';
@@ -1695,7 +1696,7 @@
                     } else if (coDurumVal.includes('ODADA_HALA') || coDurumVal.includes('ODADA')) {
                         coBadgeHtml = `<div class="co-card-badge co-card-inroom"><i class="fas fa-user-clock"></i> ODADA HÂLÂ</div>`;
                     }
-                } else if (isBosKirli && isKirli(statusStr)) {
+                } else if (isBosKirli) {
                     coBadgeHtml = `<div class="co-card-badge co-card-inroom" style="background:#d97706; color:#fff;" title="Dünden Kirli / Boş"><i class="fas fa-broom"></i> DÜNDEN KİRLİ</div>`;
                 }
 
