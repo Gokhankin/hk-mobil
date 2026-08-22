@@ -323,8 +323,23 @@
             width: 100%;
         }
 
-        .summary-item, .guest-summary-item {
+        .summary-item {
             height: 44px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            border-radius: 10px;
+            padding: 3px 2px;
+            min-width: 0;
+            cursor: pointer;
+            transition: transform 0.15s ease, opacity 0.15s ease;
+            user-select: none;
+        }
+
+        .guest-summary-item {
+            height: 54px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -359,6 +374,23 @@
             font-weight: 900;
             line-height: 1.1;
             white-space: nowrap;
+        }
+
+        .guest-value-oda {
+            font-size: 0.82rem;
+            font-weight: 900;
+            line-height: 1.1;
+            white-space: nowrap;
+            margin-top: 1px;
+        }
+
+        .guest-sub-pax {
+            font-size: 0.62rem;
+            font-weight: 700;
+            opacity: 0.9;
+            line-height: 1;
+            white-space: nowrap;
+            margin-top: 1px;
         }
 
         .summary-label, .guest-label {
@@ -1135,23 +1167,26 @@
             </div>
         </div>
 
-        <!-- SATIR 2: Müşteri KPI Kartları (3 Eşit Boyutlu Kutucuk) -->
+        <!-- SATIR 2: Müşteri KPI Kartları (4 Eşit Boyutlu Kutucuk - İki Satırlı Sayılar) -->
         <div class="guest-summary-bar">
             <div class="guest-summary-item sum-gelen" id="kpiGelen" onclick="filterByGuest('GELEN')" style="cursor:pointer;" title="Gelen müşterilerin odalarını listele">
                 <div class="guest-label"><i class="fas fa-plane-arrival"></i> Gelen</div>
-                <div class="guest-value"><span id="countGuestArrOda">0</span> Oda <span class="guest-sub">/ <span id="countGuestArrPax">0</span> Pax</span></div>
+                <div class="guest-value-oda"><span id="countGuestArrOda">0</span> Oda</div>
+                <div class="guest-sub-pax"><span id="countGuestArrPax">0</span> Pax</div>
             </div>
             <div class="guest-summary-item sum-gidecek" id="kpiGidecek" onclick="filterByGuest('GIDECEK')" style="cursor:pointer;" title="Gidecek müşterilerin odalarını listele">
                 <div class="guest-label"><i class="fas fa-plane-departure"></i> Gidecek</div>
-                <div class="guest-value"><span id="countGuestDepOda">0</span> Oda <span class="guest-sub">/ <span id="countGuestDepPax">0</span> Pax</span></div>
+                <div class="guest-value-oda"><span id="countGuestDepOda">0</span> Oda</div>
+                <div class="guest-sub-pax"><span id="countGuestDepPax">0</span> Pax</div>
             </div>
             <div class="guest-summary-item sum-inhouse" id="kpiInhouse" onclick="filterByGuest('INHOUSE')" style="cursor:pointer;" title="Inhouse müşterilerin odalarını listele">
                 <div class="guest-label"><i class="fas fa-bed"></i> Inhouse</div>
-                <div class="guest-value"><span id="countGuestInhOda">0</span> Oda <span class="guest-sub">/ <span id="countGuestInhPax">0</span> Pax</span></div>
+                <div class="guest-value-oda"><span id="countGuestInhOda">0</span> Oda</div>
+                <div class="guest-sub-pax"><span id="countGuestInhPax">0</span> Pax</div>
             </div>
             <div class="guest-summary-item sum-bos-kirli" id="kpiBosKirli" onclick="filterByGuest('BOS_KIRLI')" style="cursor:pointer;" title="Dünden kalan boş kirli odaları listele">
                 <div class="guest-label"><i class="fas fa-broom"></i> Dünden Kirli</div>
-                <div class="guest-value"><span id="countGuestBosKirliOda">0</span> Oda</div>
+                <div class="guest-value-oda" style="margin-top:4px;"><span id="countGuestBosKirliOda">0</span> Oda</div>
             </div>
         </div>
 
@@ -1183,10 +1218,6 @@
                 <button id="searchClearBtn" class="search-clear-btn" onclick="clearRoomSearch()"><i class="fas fa-times-circle"></i></button>
             </div>
             <button class="search-ok-btn" onclick="executeRoomSearch()"><i class="fas fa-arrow-right"></i> OK</button>
-            <div class="shift-tabs">
-                <div id="tabMorning" class="shift-tab active" onclick="setShift('Morning')">SABAH</div>
-                <div id="tabEvening" class="shift-tab" onclick="setShift('Evening')">AKŞAM</div>
-            </div>
         </div>
     </header>
 
@@ -1321,8 +1352,10 @@
 
         function setShift(shift) {
             currentShift = shift;
-            document.getElementById('tabMorning').classList.toggle('active', shift === 'Morning');
-            document.getElementById('tabEvening').classList.toggle('active', shift === 'Evening');
+            const tM = document.getElementById('tabMorning');
+            const tE = document.getElementById('tabEvening');
+            if (tM) tM.classList.toggle('active', shift === 'Morning');
+            if (tE) tE.classList.toggle('active', shift === 'Evening');
             renderGrid(currentData);
         }
 
@@ -1464,6 +1497,36 @@
             renderGrid(currentData);
         }
 
+        function isKirli(st) {
+            if (!st) return false;
+            let s = String(st).toUpperCase();
+            return s.includes('KIRLI') || s.includes('KİRLİ') || s.includes('KRL') || s === 'K';
+        }
+
+        function isTemiz(st) {
+            if (!st) return false;
+            let s = String(st).toUpperCase();
+            return s.includes('TEMIZ') || s.includes('TEMİZ') || s.includes('TEM');
+        }
+
+        function isOOO(st) {
+            if (!st) return false;
+            let s = String(st).toUpperCase();
+            return s.includes('ARIZALI') || s.includes('OOO');
+        }
+
+        function isBlokeli(st) {
+            if (!st) return false;
+            let s = String(st).toUpperCase();
+            return s.includes('BLOKELI') || s.includes('BLOKELİ') || s.includes('BLOK');
+        }
+
+        function isOK(st) {
+            if (!st) return false;
+            let s = String(st).toUpperCase();
+            return s === 'OK' || s.includes('HAZIR');
+        }
+
         function applyCurrentFilter() {
             updateKpiHighlights();
             if (!activeFilter) {
@@ -1471,11 +1534,11 @@
                 return;
             }
             const filtered = currentData.filter(item => {
-                let st = item['DURUM'];
-                if (activeFilter === 'KİRLİ') return st === 'KİRLİ' || st.includes('K');
-                if (activeFilter === 'TEMİZ') return st === 'TEMİZ';
-                if (activeFilter === 'OOO') return st.includes('ARIZALI') || st.includes('OOO');
-                if (activeFilter === 'BLOKELİ') return st.includes('BLOKELİ');
+                let st = item['DURUM'] || '';
+                if (activeFilter === 'KİRLİ' || activeFilter === 'KIRLI') return isKirli(st);
+                if (activeFilter === 'TEMİZ' || activeFilter === 'TEMIZ') return isTemiz(st);
+                if (activeFilter === 'OOO') return isOOO(st);
+                if (activeFilter === 'BLOKELİ' || activeFilter === 'BLOKELI') return isBlokeli(st);
                 if (activeFilter === 'GELEN') return (item['BUGUN_GELEN'] || 0) > 0;
                 if (activeFilter === 'GIDECEK') return (item['BUGUN_GIDECEK'] || 0) > 0;
                 if (activeFilter === 'INHOUSE') return (item['DOLU_BOS'] || 0) > 0;
@@ -1533,16 +1596,19 @@
         /* --- GRID RENDER --- */
         function renderGrid(items) {
             const grid = document.getElementById('gridContainer');
+            const loader = document.getElementById('loader');
+            if (loader) loader.style.display = 'none';
+
             let html = '';
             let cDirty = 0, cClean = 0, cOOO = 0, cBlocked = 0;
 
             // Sayaçlar her zaman ana listeden hesaplanır
             currentData.forEach(item => {
-                let st = item['DURUM'];
-                if (st === 'KİRLİ') cDirty++;
-                else if (st === 'TEMİZ') cClean++;
-                else if (st.includes('ARIZALI') || st.includes('OOO')) cOOO++;
-                else if (st.includes('BLOKELİ')) cBlocked++;
+                let st = item['DURUM'] || '';
+                if (isKirli(st)) cDirty++;
+                else if (isTemiz(st)) cClean++;
+                else if (isOOO(st)) cOOO++;
+                else if (isBlokeli(st)) cBlocked++;
             });
 
             if (items.length === 0) {
@@ -1557,7 +1623,7 @@
             items.forEach((item, index) => {
                 let roomNo = item['ODA'];
                 let roomType = item['TIP'];
-                let statusStr = item['DURUM'];
+                let statusStr = item['DURUM'] || '';
                 let eveningDone = item['AKSAM_SERVISI'] || 0;
                 let isOccupied = item['DOLU_BOS'] || 0;
                 let isArrival = item['BUGUN_GELEN'] || 0;
@@ -1573,25 +1639,26 @@
                 if(statusRemark) combinedRemark += `${combinedRemark ? '<hr style="margin:6px 0; opacity:0.2">' : ''}<div><span class="remark-title">Durum Notu:</span>${statusRemark}</div>`;
 
                 let bgColor = 'var(--grey)'; 
-                let currentLabel = statusStr;
+                let currentLabel = isKirli(statusStr) ? 'KİRLİ' : (isTemiz(statusStr) ? 'TEMİZ' : (isOOO(statusStr) ? 'OOO' : (isBlokeli(statusStr) ? 'BLOKELİ' : statusStr)));
 
                 let isBosKirli = item['BOS_KIRLI'] || 0;
                 if (currentShift === 'Morning') {
-                    if (isBosKirli && (statusStr === 'KİRLİ' || statusStr.includes('K'))) {
+                    if (isBosKirli && isKirli(statusStr)) {
                         bgColor = '#d97706';
                         currentLabel = 'DÜNDEN KİRLİ';
-                    } else if (statusStr === 'KİRLİ' || statusStr.includes('K')) {
+                    } else if (isKirli(statusStr)) {
                         bgColor = 'var(--red)';
                         currentLabel = 'KİRLİ';
-                    } else if (statusStr === 'TEMİZ') {
+                    } else if (isTemiz(statusStr)) {
                         bgColor = 'var(--green)';
-                    } else if (statusStr === 'OK' || statusStr === 'HAZIR / OK' || statusStr === 'HAZIRLANIYOR' || statusStr === 'HAZIR') {
+                        currentLabel = 'TEMİZ';
+                    } else if (isOK(statusStr)) {
                         bgColor = 'var(--yellow)';
                         currentLabel = 'HAZIR';
-                    } else if (statusStr.includes('ARIZALI') || statusStr.includes('OOO')) {
+                    } else if (isOOO(statusStr)) {
                         bgColor = 'var(--dark-grey)';
                         currentLabel = 'OOO';
-                    } else if (statusStr.includes('BLOKELİ')) {
+                    } else if (isBlokeli(statusStr)) {
                         bgColor = '#6366f1'; 
                         currentLabel = 'BLOKELİ';
                     } else {
@@ -1621,15 +1688,14 @@
                 if(uzatmaTimeVal) badges += `<div class="badge-uzatma" title="Uzatma Saati: ${uzatmaTimeVal}"><i class="fas fa-clock"></i> ${uzatmaTimeVal}</div>`;
                 badges += '</div>';
 
-                let isBosKirli = item['BOS_KIRLI'] || 0;
                 let coBadgeHtml = '';
                 if (isDeparture && coDurumVal) {
-                    if (coDurumVal === 'ÇIKIŞ YAPILDI') {
+                    if (coDurumVal.includes('CO_YAPILDI') || coDurumVal.includes('ÇIKIŞ')) {
                         coBadgeHtml = `<div class="co-card-badge co-card-done"><i class="fas fa-check"></i> C/O YAPILDI</div>`;
-                    } else if (coDurumVal === 'ODADA HÂLÂ') {
+                    } else if (coDurumVal.includes('ODADA_HALA') || coDurumVal.includes('ODADA')) {
                         coBadgeHtml = `<div class="co-card-badge co-card-inroom"><i class="fas fa-user-clock"></i> ODADA HÂLÂ</div>`;
                     }
-                } else if (isBosKirli && (statusStr === 'KİRLİ' || statusStr.includes('K'))) {
+                } else if (isBosKirli && isKirli(statusStr)) {
                     coBadgeHtml = `<div class="co-card-badge co-card-inroom" style="background:#d97706; color:#fff;" title="Dünden Kirli / Boş"><i class="fas fa-broom"></i> DÜNDEN KİRLİ</div>`;
                 }
 
@@ -1729,12 +1795,12 @@
             const coBox = document.getElementById('modalCOStatusBox');
             const isBosKirli = roomObj['BOS_KIRLI'] || 0;
             if (coDurumVal) {
-                if (coDurumVal === 'ÇIKIŞ YAPILDI') {
+                if (coDurumVal.includes('CO_YAPILDI') || coDurumVal.includes('ÇIKIŞ')) {
                     coBox.innerHTML = `<div class="co-status-badge co-done"><i class="fas fa-check-circle fa-lg"></i> <span><strong>C/O ÇIKIŞ YAPILDI</strong> (Oda Boşaltıldı)</span></div>`;
-                } else if (coDurumVal === 'ODADA HÂLÂ') {
+                } else if (coDurumVal.includes('ODADA_HALA') || coDurumVal.includes('ODADA')) {
                     coBox.innerHTML = `<div class="co-status-badge co-inroom"><i class="fas fa-user-clock fa-lg"></i> <span><strong>HENÜZ ÇIKIŞ YAPMADI</strong> (Odada Hâlâ)</span></div>`;
                 }
-            } else if (isBosKirli && (roomObj['DURUM'] === 'KİRLİ' || (roomObj['DURUM'] || '').includes('K'))) {
+            } else if (isBosKirli && isKirli(roomObj['DURUM'])) {
                 coBox.innerHTML = `<div class="co-status-badge co-inroom" style="background:rgba(245, 158, 11, 0.18); border:1.5px solid #f59e0b; color:#b45309;"><i class="fas fa-exclamation-circle fa-lg"></i> <span><strong>DÜNDEN KALAN KİRLİ ODA</strong> (Oda Boş)</span></div>`;
             } else {
                 coBox.innerHTML = '';
