@@ -142,3 +142,22 @@ HK çalışanlarının otel operasyonundayken telefonlarından (Ngrok aracılı�
      - Değişiklikler canlı Society sunucusuna (`192.168.0.128:5002`) aktarılarak Flask servisi yeniden başlatıldı. 
      - `/api/hk/data` uç noktasından yapılan canlı testlerde `BOS_KIRLI` oda sayısı tam olarak 7 fiziki boş kirli odaya sabitlendi.
 
+
+
+## 16. Oda Değişimi (RC) Rozeti Entegrasyonu & 414 OOO Özel Not Kontrolü (24 Ağustos 2026)
+- **Oda Değişimi (RC) Odaları Mantığı:**
+  - Resepsiyonda gün içi veya gece oda değişimi (RC) yapılan odaların (Örn: Oda 305 ve 424) "Dünden Kirli / Sarı Kart" uyarısına düşmesi engellendi.
+  - `RoomChangePlan` tablosu son 48 saatlik veri kapsama alanına alınarak RC odaları doğrudan standart **KİRLİ** kategorisine bağlandı.
+  - Mobil arayüzde (`hk_mobile.html`) oda kartlarına sağ üst mor renkte **`🔀 RC`** rozeti ve detay açıklamaları (`ODADAN RC YAPILDI` / `ODAYA RC GELDİ`) eklendi.
+- **Oda 414 & Özel Kullanım (StatusRemark) Düzeltmesi:**
+  - Veritabanı `DailyDetail` tablosunda *"hasan beyin eşyası var"* notu olan Oda 414'ün "Dünden Kirli"ye düşmesi engellendi.
+  - `StatusRemark` içeren ve müşterisi bulunmayan odalar otomatik olarak **ARIZALI (OOO) / KULLANIM DIŞI** kategorisine alındı.
+- **Sedna Masaüstü HK Modülü Mutabakatı:**
+  - Sedna Masaüstü HK Modülü ile Mobil Uygulama arasında %100 doğrulama yapıldı:
+    - Toplam HK Satılabilir Plan: **111 Oda**
+    - Konaklayan (Dolu): **58 Oda** (102 Pax)
+    - Giriş Bekleyen (Gelen): **8 Oda** (15 Pax)
+    - Çıkış Yapan (Gidecek): **10 Oda** (17 Pax)
+    - Dünden Kirli (Boş Kirli): **15 Oda** (414 OOO'ya alındı)
+- **Canlıya Alma:**
+  - `queries_hk.py` ve `hk_mobile.html` dosyaları güncellenip `192.168.0.128:5002` sunucusunda `hk_server` servisi restart edilerek canlıya alındı.

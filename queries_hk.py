@@ -77,6 +77,7 @@ def get_hk_status(conn) -> pd.DataFrame:
                 WHEN (rm.DirtyClean = 1 OR rm.HkStatus = 1) 
                      AND rm.HkStatus NOT IN (4, 5)
                      AND ISNULL(dd.[Status], 0) NOT IN (3, 4)
+                     AND ISNULL(dd.StatusRemark, '') = ''
                      AND res.RecId IS NULL 
                      AND rc.Room IS NULL
                      AND NOT EXISTS (
@@ -103,6 +104,7 @@ def get_hk_status(conn) -> pd.DataFrame:
             CASE 
                 WHEN dd.[Status] = 4 THEN 'ARIZALI (OOO)'
                 WHEN dd.[Status] = 3 THEN 'BLOKELI'
+                WHEN ISNULL(dd.StatusRemark, '') <> '' AND res.RecId IS NULL THEN 'ARIZALI (OOO)'
                 WHEN rm.HkStatus = 4 THEN 'ARIZALI (OOO)'
                 WHEN rm.HkStatus = 5 THEN 'BLOKELI'
                 WHEN rm.HkStatus = 3 THEN 'OK'
@@ -111,7 +113,8 @@ def get_hk_status(conn) -> pd.DataFrame:
                 ELSE 'KIRLI'
             END AS [DURUM],
             CASE 
-                WHEN rm.HkStatus = 3 AND ISNULL(dd.[Status], 0) NOT IN (3, 4) THEN 'EVET'
+                WHEN rm.HkStatus = 3 AND ISNULL(dd.[Status], 0) NOT IN (3, 4)
+                     AND ISNULL(dd.StatusRemark, '') = '' THEN 'EVET'
                 ELSE 'HAZIR_MI'
             END AS [HAZIR_MI]
         FROM Room rm
