@@ -47,13 +47,19 @@ def get_hk_status(conn) -> pd.DataFrame:
         TodayRC AS (
             SELECT DISTINCT Room
             FROM (
-                SELECT OldRoom AS Room FROM RoomChangePlan WHERE (CAST(RCDate AS DATE) = @Today OR CAST(RecordDate AS DATE) = @Today)
+                SELECT OldRoom AS Room FROM RoomChangePlan WHERE (CAST(RCDate AS DATE) >= DATEADD(day, -2, @Today) OR CAST(RecordDate AS DATE) >= DATEADD(day, -2, @Today))
                 UNION
-                SELECT NewRoom AS Room FROM RoomChangePlan WHERE (CAST(RCDate AS DATE) = @Today OR CAST(RecordDate AS DATE) = @Today)
+                SELECT NewRoom AS Room FROM RoomChangePlan WHERE (CAST(RCDate AS DATE) >= DATEADD(day, -2, @Today) OR CAST(RecordDate AS DATE) >= DATEADD(day, -2, @Today))
             ) rc_all
             WHERE ISNULL(Room, '') <> ''
         )
         SELECT 
+            CASE WHEN rc_old.OldRoom IS NOT NULL OR rc_new.NewRoom IS NOT NULL THEN 1 ELSE 0 END AS [IS_RC],
+            CASE 
+                WHEN rc_old.OldRoom IS NOT NULL THEN 'ODADAN RC YAPILDI (' + ISNULL(rc_old.NewRoom, '') + ' ODAYA)'
+                WHEN rc_new.NewRoom IS NOT NULL THEN 'ODAYA RC GELDİ (' + ISNULL(rc_new.OldRoom, '') + ' ODADAN)'
+                ELSE ''
+            END AS [RC_ACIKLAMA],
             rm.Room AS [ODA],
             rm.RoomTypeCode AS [TIP],
             rm.Remark AS [REMARK],
@@ -112,6 +118,16 @@ def get_hk_status(conn) -> pd.DataFrame:
         LEFT JOIN ActiveRes res ON rm.Room = res.MatchRoom AND res.rn = 1
         LEFT JOIN TodayDD dd ON rm.Room = dd.Room AND dd.rn = 1
         LEFT JOIN TodayRC rc ON rm.Room = rc.Room
+        LEFT JOIN (
+            SELECT OldRoom, MAX(NewRoom) AS NewRoom FROM RoomChangePlan 
+            WHERE (CAST(RCDate AS DATE) = @Today OR CAST(RecordDate AS DATE) = @Today) AND ISNULL(Deleted, 0) = 0
+            GROUP BY OldRoom
+        ) rc_old ON rm.Room = rc_old.OldRoom
+        LEFT JOIN (
+            SELECT NewRoom, MAX(OldRoom) AS OldRoom FROM RoomChangePlan 
+            WHERE (CAST(RCDate AS DATE) = @Today OR CAST(RecordDate AS DATE) = @Today) AND ISNULL(Deleted, 0) = 0
+            GROUP BY NewRoom
+        ) rc_new ON rm.Room = rc_new.NewRoom
         WHERE rm.ForeCast = 1
         ORDER BY rm.Room
     """, conn)

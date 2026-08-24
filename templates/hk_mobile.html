@@ -1687,6 +1687,7 @@
                 if(isArrival) badges += `<i class="fas fa-sign-in-alt badge-icon badge-in" title="Bugün Giriş"></i>`;
                 if(isDeparture) badges += `<i class="fas fa-sign-out-alt badge-icon badge-out" title="Bugün Çıkış"></i>`;
                 if(uzatmaTimeVal) badges += `<div class="badge-uzatma" title="Uzatma Saati: ${uzatmaTimeVal}"><i class="fas fa-clock"></i> ${uzatmaTimeVal}</div>`;
+                if(item.IS_RC == 1 || item.RC_ACIKLAMA) badges += `<div class="badge-rc" style="background:#8b5cf6; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; margin-left:4px; display:inline-flex; align-items:center; gap:3px;" title="${item.RC_ACIKLAMA || 'Oda Değişimi (RC)'}"><i class="fas fa-exchange-alt"></i> RC</div>`;
                 badges += '</div>';
 
                 let coBadgeHtml = '';
