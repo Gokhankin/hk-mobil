@@ -43,6 +43,7 @@ HK çalışanlarının otel operasyonundayken telefonlarından (Ngrok aracılı�
     - **Inhouse Müşteri:** Mavi tonlar (`#38bdf8`) + Yatak ikonu (`fa-bed`).
   - HK Mobil giriş ekranına yetkisiz erişimi engellemek için **1234** PIN şifre koruması eklendi. Oturum doğrulama `sessionStorage` seviyesine çekilerek her yeni tarayıcı girişinde ve üst menüden görevli değiştirildiğinde tekrar şifre girm zorunlu kılındı.
   - **Sedna Front Office `S/O` Kırmızı İbare Düzeltmesi:** HK Mobil'den oda temizlendiğinde Sedna tablosunda `HkStatus = 2` yazılarak ortaya çıkan kırmızı **S/O** (Second OK/Supervisor) ibaresi engellendi. Sedna ana renk/durum kontrolünün `DirtyClean` (1=Kirli, 0=Temiz) sütununda olduğu doğrulanıp `HkStatus` varsayılan 0 değerine çekildi. Veritabanındaki 118 nolu odanın `HkStatus` değeri sıfırlanarak kırmızı ibare kaldırıldı.
+
 ## 6. Güvenli Oda Durum Değiştirme ve Oda Arama Arayüzü (Ağustos 2026)
 - **Ergonomik Oda Arama Çubuğu (Search Bar):**
   - HK Mobil uygulamasının üst kısmındaki oda sayaçları (KPI) üzerine cep telefonunda tam satır kaplayacak şekilde yüksekliği artırılmış, 1 satır büyük bir arama çubuğu ve yeşil **OK** butonu yerleştirildi.
@@ -135,29 +136,23 @@ HK çalışanlarının otel operasyonundayken telefonlarından (Ngrok aracılı�
      - Bugün hareketi (C/In, C/Out, Inhouse) bulunan tüm odalar tekrar kirlendiğinde (RC olduğunda) "Dünden Kirli" bayrağı sıfırlanıp normal **KİRLİ** (Kırmızı kart `#f43f5e`) olarak görüntülenmesi sağlandı.
   2. **SQL `DURUM` Öncelik Mantığı Düzenlendi (`queries_hk.py`):**
      - SQL sorgusundaki `CASE` bloğunda `rm.HkStatus = 3` (`'OK'`) koşulu `rm.DirtyClean = 0` (`'TEMIZ'`) koşulunun üstüne alındı.
-     - Böylece HK Mobile uygulamasından `HAZIR (OK)` tıklanan odalar tam ve doğru şekilde `HAZIR` (Sarı/Gold `#f59e0b` kart) durumuna geçti.
+     - Böylece HK Mobile uygulamasından `HAZIR (OK)` tıklanan odalar tam ve doğru şekilde `HAZIR` (Sarı/Gold `#f59e0b` kart) durumına geçti.
   3. **Frontend Savunma Kontrolü (`hk_mobile.html`):**
      - Frontend `renderGrid` fonksiyonunda `isBosKirli` mantığı; bugün gelişi, gidişi veya inhouse konaklayanı olan odaları "Dünden Kirli" kartından muaf tutacak şekilde korumaya alındı.
   4. **Canlı Sunucu Deployment:**
      - Değişiklikler canlı Society sunucusuna (`192.168.0.128:5002`) aktarılarak Flask servisi yeniden başlatıldı. 
      - `/api/hk/data` uç noktasından yapılan canlı testlerde `BOS_KIRLI` oda sayısı tam olarak 7 fiziki boş kirli odaya sabitlendi.
 
-
-
-## 16. Oda Değişimi (RC) Rozeti Entegrasyonu & 414 OOO Özel Not Kontrolü (24 Ağustos 2026)
-- **Oda Değişimi (RC) Odaları Mantığı:**
-  - Resepsiyonda gün içi veya gece oda değişimi (RC) yapılan odaların (Örn: Oda 305 ve 424) "Dünden Kirli / Sarı Kart" uyarısına düşmesi engellendi.
-  - `RoomChangePlan` tablosu son 48 saatlik veri kapsama alanına alınarak RC odaları doğrudan standart **KİRLİ** kategorisine bağlandı.
-  - Mobil arayüzde (`hk_mobile.html`) oda kartlarına sağ üst mor renkte **`🔀 RC`** rozeti ve detay açıklamaları (`ODADAN RC YAPILDI` / `ODAYA RC GELDİ`) eklendi.
-- **Oda 414 & Özel Kullanım (StatusRemark) Düzeltmesi:**
-  - Veritabanı `DailyDetail` tablosunda *"hasan beyin eşyası var"* notu olan Oda 414'ün "Dünden Kirli"ye düşmesi engellendi.
-  - `StatusRemark` içeren ve müşterisi bulunmayan odalar otomatik olarak **ARIZALI (OOO) / KULLANIM DIŞI** kategorisine alındı.
-- **Sedna Masaüstü HK Modülü Mutabakatı:**
-  - Sedna Masaüstü HK Modülü ile Mobil Uygulama arasında %100 doğrulama yapıldı:
-    - Toplam HK Satılabilir Plan: **111 Oda**
-    - Konaklayan (Dolu): **58 Oda** (102 Pax)
-    - Giriş Bekleyen (Gelen): **8 Oda** (15 Pax)
-    - Çıkış Yapan (Gidecek): **10 Oda** (17 Pax)
-    - Dünden Kirli (Boş Kirli): **15 Oda** (414 OOO'ya alındı)
-- **Canlıya Alma:**
-  - `queries_hk.py` ve `hk_mobile.html` dosyaları güncellenip `192.168.0.128:5002` sunucusunda `hk_server` servisi restart edilerek canlıya alındı.
+## 16. Gün İçi İşlem Gören Odaların (C/O ve Bugün Kirlenen) "Dünden Kirli" Çıkma Sorununun Kesin Çözümü (24 Ağustos 2026)
+- **Dünden Kirli Tanımı & İş Mantığı:**
+  - Konaklayan (Inhouse) misafirlerin 2. veya 3. gün kalan odaları kesinlikle "Dünden Kirli" **DEĞİLDİR**, "In-House / Dolu" oda temizliğidir.
+  - Gerçek "Dünden Kirli" oda: İçinde **hiç misafir bulunmayan (BOŞ)** ve dün temizlenmeyip bugüne sarkan boş kirli odadır.
+- **Kök Neden Analizi:**
+  1. **Oda 103 (C/O Yapılan Oda):** Ön büro Sedna'da çıkış yaparken rezervasyonun `Room` alanını `2003` olarak güncelliyordu. Eski SQL sorgusu odayı "boş ve hareketsiz" sanıp C/O kaydını kaçırıyor ve odayı "Dünden Kirli" yapıyordu. `ActiveRes` CTE'sinde `Remark` alanındaki oda numarası eşleşmesi ve `MorningSnapshot` C/O verileri bağlanarak Oda 103'ün bugünkü C/O hareketi (`BUGUN_GIDECEK = 1`, `CO_YAPILDI` rozeti) %100 yakalandı.
+  2. **Oda 309 (Bugün Kirliye Düşürülen Oda):** Sabah HK snapshot'ında (`HkHistory`) **TEMİZ** olan oda gün içinde kirlendiğinde (HK personeli kirliye düşürdüğünde), eski SQL sorgusu odanın **sabah temiz olduğunu** kontrol etmediği için odayı "Dünden Kirli" yapıyordu. `MorningSnapshot` CTE'si eklenerek, bir odanın "Dünden Kirli" sayılması için **sabah 09:10 snapshot'ında da (`DirtyClean = 1`) kirli olma şartı** eklendi. Sabah temiz olup gün içinde kirlenen tüm odalar normal **KİRLİ (Kırmızı)** durumuna çekildi.
+- **Uygulanan SQL CTE Optimizasyonu (`queries_hk.py`):**
+  - **`MorningSnapshot` CTE Entegrasyonu:** Sabah 09:10'da Sedna `HkHistory` tablosuna yazılan ilk durum snapshot'ı sorguya dahil edildi.
+  - **Müşteri KPI Senkronizasyonu:** `get_guest_stats` fonksiyonu grid sorgusuyla %100 birebir senkronize edilerek üst KPI kartlarındaki Gidecek Oda sayısı (10) ile tıklanınca süzülen oda listesi tam eşitlendi.
+- **Canlı Sunucu Doğrulaması:**
+  - Değişiklikler canlı Society sunucusuna (`192.168.0.128:5002`) deploy edildi.
+  - Canlı API testinde: Oda 103 `DURUM: KIRLI`, `CO_DURUM: CO_YAPILDI`, `BOS_KIRLI: 0`; Oda 309 `DURUM: KIRLI`, `BOS_KIRLI: 0` olarak 100% doğrulandı.

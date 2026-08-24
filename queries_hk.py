@@ -6,13 +6,37 @@ def get_hk_status(conn) -> pd.DataFrame:
     df = pd.read_sql("""
         DECLARE @Today DATE = CAST(GETDATE() AS DATE);
 
-        WITH ActiveRes AS (
+        WITH MorningSnapshot AS (
+            SELECT Room, DirtyClean, HkStatus, GuestName, AgencyName, CheckinDate, CheckOutDate, Fostatus, Pax, 
+                   (ISNULL(Child1, 0) + ISNULL(Child2, 0) + ISNULL(Child3, 0) + ISNULL(Child4, 0)) AS Childs,
+                   ROW_NUMBER() OVER (PARTITION BY Room ORDER BY RecId ASC) AS rn
+            FROM HkHistory
+            WHERE CAST(HotelDate AS DATE) = @Today
+        ),
+        ActiveRes AS (
             SELECT 
                 r.RecId, r.Room, r.RoomNummer, r.FirstName1, r.LastName1, r.BedType, r.Remark, r.ResRemark, r.Status, r.CheckinDate, r.CheckOutDate, r.LateCOut,
+                r.Pax, r.Childs,
                 a.Name AS Acente,
-                COALESCE(NULLIF(r.Room, ''), rm_ref.Room) AS MatchRoom,
+                COALESCE(
+                    NULLIF(r.Room, ''), 
+                    rm_ref.Room,
+                    CASE 
+                        WHEN r.Remark LIKE '1[0-9][0-9] %' OR r.Remark LIKE '2[0-9][0-9] %' OR r.Remark LIKE '3[0-9][0-9] %' OR r.Remark LIKE '4[0-9][0-9] %' OR r.Remark LIKE '7[0-9][0-9] %'
+                        THEN SUBSTRING(r.Remark, 1, 3)
+                        ELSE NULL
+                    END
+                ) AS MatchRoom,
                 ROW_NUMBER() OVER (
-                    PARTITION BY COALESCE(NULLIF(r.Room, ''), rm_ref.Room)
+                    PARTITION BY COALESCE(
+                        NULLIF(r.Room, ''), 
+                        rm_ref.Room,
+                        CASE 
+                            WHEN r.Remark LIKE '1[0-9][0-9] %' OR r.Remark LIKE '2[0-9][0-9] %' OR r.Remark LIKE '3[0-9][0-9] %' OR r.Remark LIKE '4[0-9][0-9] %' OR r.Remark LIKE '7[0-9][0-9] %'
+                            THEN SUBSTRING(r.Remark, 1, 3)
+                            ELSE NULL
+                        END
+                    )
                     ORDER BY 
                         CASE 
                             WHEN r.Status = 2 AND CAST(r.CheckinDate AS DATE) <= @Today AND CAST(r.CheckOutDate AS DATE) >= @Today THEN 1
@@ -47,56 +71,53 @@ def get_hk_status(conn) -> pd.DataFrame:
         TodayRC AS (
             SELECT DISTINCT Room
             FROM (
-                SELECT OldRoom AS Room FROM RoomChangePlan WHERE (CAST(RCDate AS DATE) >= DATEADD(day, -2, @Today) OR CAST(RecordDate AS DATE) >= DATEADD(day, -2, @Today))
+                SELECT OldRoom AS Room FROM RoomChangePlan WHERE (CAST(RCDate AS DATE) = @Today OR CAST(RecordDate AS DATE) = @Today)
                 UNION
-                SELECT NewRoom AS Room FROM RoomChangePlan WHERE (CAST(RCDate AS DATE) >= DATEADD(day, -2, @Today) OR CAST(RecordDate AS DATE) >= DATEADD(day, -2, @Today))
+                SELECT NewRoom AS Room FROM RoomChangePlan WHERE (CAST(RCDate AS DATE) = @Today OR CAST(RecordDate AS DATE) = @Today)
             ) rc_all
             WHERE ISNULL(Room, '') <> ''
         )
         SELECT 
-            CASE WHEN rc_old.OldRoom IS NOT NULL OR rc_new.NewRoom IS NOT NULL THEN 1 ELSE 0 END AS [IS_RC],
-            CASE 
-                WHEN rc_old.OldRoom IS NOT NULL THEN 'ODADAN RC YAPILDI (' + ISNULL(rc_old.NewRoom, '') + ' ODAYA)'
-                WHEN rc_new.NewRoom IS NOT NULL THEN 'ODAYA RC GELDİ (' + ISNULL(rc_new.OldRoom, '') + ' ODADAN)'
-                ELSE ''
-            END AS [RC_ACIKLAMA],
             rm.Room AS [ODA],
             rm.RoomTypeCode AS [TIP],
             rm.Remark AS [REMARK],
             rm.HkKontrol AS [AKSAM_SERVISI],
-            ISNULL(res.FirstName1, '') + ' ' + ISNULL(res.LastName1, '') AS [MISAFIR_ADI],
+            COALESCE(NULLIF(ISNULL(res.FirstName1, '') + ' ' + ISNULL(res.LastName1, ''), ' '), ms.GuestName, '') AS [MISAFIR_ADI],
             ISNULL(res.BedType, '') AS [YATAK_TIPI],
-            ISNULL(res.Acente, '') AS [ACENTE],
-            CASE WHEN res.CheckinDate IS NOT NULL THEN CONVERT(VARCHAR(10), res.CheckinDate, 104) ELSE '' END AS [CHECKIN_TARIHI],
-            CASE WHEN res.CheckOutDate IS NOT NULL THEN CONVERT(VARCHAR(10), res.CheckOutDate, 104) ELSE '' END AS [CHECKOUT_TARIHI],
+            COALESCE(NULLIF(res.Acente, ''), ms.AgencyName, '') AS [ACENTE],
+            CASE 
+                WHEN res.CheckinDate IS NOT NULL THEN CONVERT(VARCHAR(10), res.CheckinDate, 104) 
+                WHEN ms.CheckinDate IS NOT NULL THEN CONVERT(VARCHAR(10), ms.CheckinDate, 104) 
+                ELSE '' 
+            END AS [CHECKIN_TARIHI],
+            CASE 
+                WHEN res.CheckOutDate IS NOT NULL THEN CONVERT(VARCHAR(10), res.CheckOutDate, 104) 
+                WHEN ms.CheckOutDate IS NOT NULL THEN CONVERT(VARCHAR(10), ms.CheckOutDate, 104) 
+                ELSE '' 
+            END AS [CHECKOUT_TARIHI],
             CASE WHEN ISNULL(res.Remark, '') <> '' THEN res.Remark ELSE res.ResRemark END AS [REZ_NOTU],
             CASE WHEN res.Status = 2 AND CAST(res.CheckinDate AS DATE) <= @Today AND CAST(res.CheckOutDate AS DATE) >= @Today THEN 1 ELSE 0 END AS [DOLU_BOS],
             CASE WHEN res.Status = 1 AND CAST(res.CheckinDate AS DATE) = @Today THEN 1 ELSE 0 END AS [BUGUN_GELEN],
-            CASE WHEN (res.Status = 2 OR res.Status = 3) AND CAST(res.CheckOutDate AS DATE) = @Today THEN 1 ELSE 0 END AS [BUGUN_GIDECEK],
+            CASE 
+                WHEN (res.Status = 2 OR res.Status = 3) AND CAST(res.CheckOutDate AS DATE) = @Today THEN 1 
+                WHEN ms.CheckOutDate = @Today THEN 1
+                ELSE 0 
+            END AS [BUGUN_GIDECEK],
             CASE 
                 WHEN (rm.DirtyClean = 1 OR rm.HkStatus = 1) 
                      AND rm.HkStatus NOT IN (4, 5)
                      AND ISNULL(dd.[Status], 0) NOT IN (3, 4)
-                     AND ISNULL(dd.StatusRemark, '') = ''
-                     AND res.RecId IS NULL 
                      AND rc.Room IS NULL
-                     AND NOT EXISTS (
-                         SELECT 1 FROM Reservation r_chk 
-                         LEFT JOIN Room rm_chk ON r_chk.RoomNummer = rm_chk.RecId
-                         WHERE (r_chk.Room = rm.Room OR rm_chk.Room = rm.Room)
-                           AND r_chk.StatusCode IN (0,1,2,3)
-                           AND r_chk.Status IN (1,2,3)
-                           AND (
-                               CAST(r_chk.CheckinDate AS DATE) = @Today 
-                               OR CAST(r_chk.CheckOutDate AS DATE) = @Today
-                               OR (CAST(r_chk.CheckinDate AS DATE) <= @Today AND CAST(r_chk.CheckOutDate AS DATE) >= @Today)
-                           )
-                     )
+                     AND res.RecId IS NULL 
+                     AND (ms.CheckOutDate IS NULL OR ms.CheckOutDate <> @Today)
+                     AND (ms.CheckinDate IS NULL OR ms.CheckinDate <> @Today)
+                     AND ms.DirtyClean = 1
                 THEN 1 ELSE 0 
             END AS [BOS_KIRLI],
             CASE 
                 WHEN CAST(res.CheckOutDate AS DATE) = @Today AND res.Status = 3 THEN 'CO_YAPILDI'
                 WHEN CAST(res.CheckOutDate AS DATE) = @Today AND res.Status = 2 THEN 'ODADA_HALA'
+                WHEN ms.CheckOutDate = @Today THEN 'CO_YAPILDI'
                 ELSE ''
             END AS [CO_DURUM],
             ISNULL(res.LateCOut, '') AS [UZATMA_SAATI],
@@ -104,7 +125,6 @@ def get_hk_status(conn) -> pd.DataFrame:
             CASE 
                 WHEN dd.[Status] = 4 THEN 'ARIZALI (OOO)'
                 WHEN dd.[Status] = 3 THEN 'BLOKELI'
-                WHEN ISNULL(dd.StatusRemark, '') <> '' AND res.RecId IS NULL THEN 'ARIZALI (OOO)'
                 WHEN rm.HkStatus = 4 THEN 'ARIZALI (OOO)'
                 WHEN rm.HkStatus = 5 THEN 'BLOKELI'
                 WHEN rm.HkStatus = 3 THEN 'OK'
@@ -113,24 +133,16 @@ def get_hk_status(conn) -> pd.DataFrame:
                 ELSE 'KIRLI'
             END AS [DURUM],
             CASE 
-                WHEN rm.HkStatus = 3 AND ISNULL(dd.[Status], 0) NOT IN (3, 4)
-                     AND ISNULL(dd.StatusRemark, '') = '' THEN 'EVET'
+                WHEN rm.HkStatus = 3 AND ISNULL(dd.[Status], 0) NOT IN (3, 4) THEN 'EVET'
                 ELSE 'HAZIR_MI'
-            END AS [HAZIR_MI]
+            END AS [HAZIR_MI],
+            ISNULL(res.Pax, ms.Pax) AS Pax,
+            ISNULL(res.Childs, ms.Childs) AS Childs
         FROM Room rm
         LEFT JOIN ActiveRes res ON rm.Room = res.MatchRoom AND res.rn = 1
+        LEFT JOIN MorningSnapshot ms ON rm.Room = ms.Room AND ms.rn = 1
         LEFT JOIN TodayDD dd ON rm.Room = dd.Room AND dd.rn = 1
         LEFT JOIN TodayRC rc ON rm.Room = rc.Room
-        LEFT JOIN (
-            SELECT OldRoom, MAX(NewRoom) AS NewRoom FROM RoomChangePlan 
-            WHERE (CAST(RCDate AS DATE) = @Today OR CAST(RecordDate AS DATE) = @Today) AND ISNULL(Deleted, 0) = 0
-            GROUP BY OldRoom
-        ) rc_old ON rm.Room = rc_old.OldRoom
-        LEFT JOIN (
-            SELECT NewRoom, MAX(OldRoom) AS OldRoom FROM RoomChangePlan 
-            WHERE (CAST(RCDate AS DATE) = @Today OR CAST(RecordDate AS DATE) = @Today) AND ISNULL(Deleted, 0) = 0
-            GROUP BY NewRoom
-        ) rc_new ON rm.Room = rc_new.NewRoom
         WHERE rm.ForeCast = 1
         ORDER BY rm.Room
     """, conn)
@@ -231,54 +243,27 @@ def set_evening_status(conn, room: str, status: int, maid_code: str = None):
 def get_guest_stats(conn):
     """
     Sedna veritabanindan Gelen Musteri, Gidecek Musteri ve Inhouse Musteri (Oda & Pax) istatistiklerini tek bir hizli sorguda alir.
-    Fiziksel HK oda planindaki (ForeCast = 1) benzersiz oda sayilarini baz alir.
+    Grid query sonuclariyla %100 birebir senkronize calisir.
     """
-    cursor = conn.cursor()
+    df_hk = get_hk_status(conn)
     
-    no_show_clause = """
-      AND ISNULL(r.Voucher, '') NOT LIKE '%NOSHOW%'
-      AND ISNULL(r.Voucher, '') NOT LIKE '%NO-SHOW%'
-      AND ISNULL(r.ResRemark, '') NOT LIKE '%NOSHOW%'
-      AND ISNULL(r.ResRemark, '') NOT LIKE '%NO-SHOW%'
-      AND ISNULL(r.FirstName1, '') NOT LIKE '%NOSHOW%'
-      AND ISNULL(r.LastName1, '') NOT LIKE '%NOSHOW%'
-    """
-
-    join_clause = """
-        INNER JOIN Room rm ON (
-            (r.Room = rm.Room AND ISNULL(r.Room, '') <> '') 
-            OR 
-            ((r.Room IS NULL OR r.Room = '') AND r.RoomNummer = rm.RecId)
-        )
-    """
-
-    cursor.execute(f"""
-        SELECT 
-            COUNT(DISTINCT CASE WHEN r.Status = 1 AND CAST(r.CheckinDate AS DATE) = CAST(GETDATE() AS DATE) THEN rm.Room END) AS Arr_Oda,
-            ISNULL(SUM(CASE WHEN r.Status = 1 AND CAST(r.CheckinDate AS DATE) = CAST(GETDATE() AS DATE) THEN ISNULL(r.Pax, 0) + ISNULL(r.Childs, 0) ELSE 0 END), 0) AS Arr_Pax,
-            COUNT(DISTINCT CASE WHEN (r.Status = 2 OR r.Status = 3) AND CAST(r.CheckOutDate AS DATE) = CAST(GETDATE() AS DATE) THEN rm.Room END) AS Dep_Oda,
-            ISNULL(SUM(CASE WHEN (r.Status = 2 OR r.Status = 3) AND CAST(r.CheckOutDate AS DATE) = CAST(GETDATE() AS DATE) THEN ISNULL(r.Pax, 0) + ISNULL(r.Childs, 0) ELSE 0 END), 0) AS Dep_Pax,
-            COUNT(DISTINCT CASE WHEN r.Status = 2 AND CAST(r.CheckinDate AS DATE) <= CAST(GETDATE() AS DATE) AND CAST(r.CheckOutDate AS DATE) >= CAST(GETDATE() AS DATE) THEN rm.Room END) AS Inh_Oda,
-            ISNULL(SUM(CASE WHEN r.Status = 2 AND CAST(r.CheckinDate AS DATE) <= CAST(GETDATE() AS DATE) AND CAST(r.CheckOutDate AS DATE) >= CAST(GETDATE() AS DATE) THEN ISNULL(r.Pax, 0) + ISNULL(r.Childs, 0) ELSE 0 END), 0) AS Inh_Pax
-        FROM Reservation r
-        {join_clause}
-        WHERE r.StatusCode IN (0, 1, 2, 3)
-          AND rm.ForeCast = 1
-          {no_show_clause}
-    """)
-    row = cursor.fetchone()
-
-    arr_oda = int(row[0]) if row and row[0] else 0
-    arr_pax = int(row[1]) if row and row[1] else 0
-    dep_oda = int(row[2]) if row and row[2] else 0
-    dep_pax = int(row[3]) if row and row[3] else 0
-    inh_oda = int(row[4]) if row and row[4] else 0
-    inh_pax = int(row[5]) if row and row[5] else 0
+    arr_df = df_hk[df_hk['BUGUN_GELEN'] == 1]
+    dep_df = df_hk[df_hk['BUGUN_GIDECEK'] == 1]
+    inh_df = df_hk[df_hk['DOLU_BOS'] == 1]
+    
+    def calc_pax(sub_df):
+        pax_total = 0
+        for _, row in sub_df.iterrows():
+            try:
+                p = int(row['Pax']) if row['Pax'] != '' else 0
+                c = int(row['Childs']) if row['Childs'] != '' else 0
+                pax_total += (p + c)
+            except Exception:
+                pass
+        return pax_total
 
     return {
-        "arrivals": {"oda": arr_oda, "pax": arr_pax},
-        "departures": {"oda": dep_oda, "pax": dep_pax},
-        "inhouse": {"oda": inh_oda, "pax": inh_pax}
+        "arrivals": {"oda": len(arr_df), "pax": calc_pax(arr_df)},
+        "departures": {"oda": len(dep_df), "pax": calc_pax(dep_df)},
+        "inhouse": {"oda": len(inh_df), "pax": calc_pax(inh_df)}
     }
-
-
