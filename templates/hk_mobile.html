@@ -473,6 +473,115 @@
             box-sizing: border-box;
             overflow-x: hidden;
             padding-bottom: 140px !important;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            touch-action: pan-y;
+        }
+
+        /* --- SIKIŞTIRILMIŞ / 2 KAT KÜÇÜK GÖRÜNÜM (COMPACT / PINCH-IN MODE) --- */
+        .grid.grid-compact {
+            grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+            gap: 3px !important;
+        }
+
+        .grid.grid-compact .room-card {
+            border-radius: 6px !important;
+            padding: 2px 1px !important;
+            border-width: 1px !important;
+        }
+
+        .grid.grid-compact .room-no {
+            font-size: 0.78rem !important;
+            font-weight: 900 !important;
+            margin-top: 7px !important;
+            letter-spacing: -0.3px !important;
+            line-height: 1 !important;
+        }
+
+        .grid.grid-compact .room-type {
+            font-size: 0.38rem !important;
+            margin-top: 0px !important;
+            transform: scale(0.9);
+            line-height: 1 !important;
+        }
+
+        .grid.grid-compact .room-status {
+            font-size: 0.38rem !important;
+            padding: 1px 0 !important;
+            border-radius: 2px !important;
+            margin-bottom: 0px !important;
+            line-height: 1.1 !important;
+            transform: scale(0.95);
+        }
+
+        .grid.grid-compact .badge-icon {
+            font-size: 0.42rem !important;
+        }
+
+        .grid.grid-compact .room-badges {
+            top: 2px !important;
+            left: 2px !important;
+            gap: 1.5px !important;
+        }
+
+        .grid.grid-compact .clean-indicator {
+            width: 11px !important;
+            height: 11px !important;
+            font-size: 0.42rem !important;
+            top: 2px !important;
+            right: 2px !important;
+        }
+
+        .grid.grid-compact .clean-indicator.has-remark {
+            right: 14px !important;
+        }
+
+        .grid.grid-compact .remark-indicator {
+            width: 10px !important;
+            height: 10px !important;
+            font-size: 0.4rem !important;
+            top: 2px !important;
+            right: 2px !important;
+        }
+
+        .grid.grid-compact .badge-uzatma {
+            font-size: 0.38rem !important;
+            padding: 0 2px !important;
+            border-radius: 2px !important;
+        }
+
+        .grid.grid-compact .co-card-badge {
+            display: none !important; /* Küçük görünümde kart sığması için metin yerine üstteki rozet yeterli */
+        }
+
+        .grid.grid-compact .agency-card-tag {
+            display: none !important;
+        }
+
+        /* Yakınlaştırma / Uzaklaştırma Bilgi Baloncuğu (Toast) */
+        .zoom-toast {
+            position: fixed;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(15, 23, 42, 0.9);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .zoom-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
         }
 
         @media (min-width: 520px) {
@@ -480,6 +589,11 @@
                 grid-template-columns: repeat(auto-fill, 108px);
                 justify-content: center;
                 gap: 10px;
+            }
+
+            .grid.grid-compact {
+                grid-template-columns: repeat(auto-fill, 64px) !important;
+                gap: 6px !important;
             }
 
             .room-card {
@@ -493,6 +607,15 @@
                 box-sizing: border-box !important;
                 overflow: hidden !important;
                 flex-shrink: 0 !important;
+            }
+
+            .grid.grid-compact .room-card {
+                width: 64px !important;
+                height: 64px !important;
+                min-width: 64px !important;
+                min-height: 64px !important;
+                max-width: 64px !important;
+                max-height: 64px !important;
             }
         }
 
@@ -641,6 +764,40 @@
             backdrop-filter: blur(2px);
             box-shadow: 0 1px 3px rgba(0,0,0,0.2);
             z-index: 50;
+        }
+
+        .clean-indicator {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            font-size: 0.55rem;
+            font-weight: 900;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+            z-index: 50;
+        }
+        .clean-indicator.has-remark {
+            right: 20px;
+        }
+        .clean-ind-clean {
+            background: #22c55e;
+            color: #ffffff;
+            border: 1px solid #16a34a;
+        }
+        .clean-ind-dirty {
+            background: #ef4444;
+            color: #ffffff;
+            border: 1px solid #dc2626;
+        }
+        .clean-ind-ooo {
+            background: #a855f7;
+            color: #ffffff;
+            border: 1px solid #9333ea;
         }
 
         /* Connection Status and Maid Selector */
@@ -1176,6 +1333,7 @@
                     <div id="connDot" class="conn-dot"></div>
                     <span id="connLabel">OFF</span>
                 </div>
+                <button class="refresh-btn" id="densityBtn" onclick="toggleDensity()" title="Oda Görünümünü Küçült / Büyüt (Geniş / Kompakt)"><i id="densityIcon" class="fas fa-compress-alt"></i></button>
                 <button class="refresh-btn" onclick="toggleTheme()" title="Karanlık/Aydınlık Mod"><i id="themeIcon" class="fas fa-moon"></i></button>
                 <button class="refresh-btn" onclick="logout()" title="Çıkış Yap"><i class="fas fa-sign-out-alt"></i></button>
                 <button class="refresh-btn" onclick="loadData()" title="Yenile"><i class="fas fa-sync-alt"></i></button>
@@ -1243,6 +1401,9 @@
         <div class="grid" id="gridContainer"></div>
     </div>
 
+    <!-- Zoom Bildirim Baloncuğu (Toast) -->
+    <div id="zoomToast" class="zoom-toast"><i class="fas fa-search-minus"></i> <span>Kompakt Görünüm (2x Küçük)</span></div>
+
     <script>
         let currentData = [];
         let currentShift = 'Morning'; 
@@ -1250,16 +1411,127 @@
         let activeModalRoom = null;
         let selectedNewStatus = null;
 
+        let liveSyncTimer = null;
+        let isCompactDensity = localStorage.getItem('hk_grid_density') === 'compact';
+
         document.addEventListener('DOMContentLoaded', () => {
             initTheme();
+            initDensity();
+            setupPinchGesture();
             fetchMaids();
             const isAuth = sessionStorage.getItem('hk_auth') === 'true';
             if (!currentMaid || !isAuth) {
                 document.getElementById('loginOverlay').style.display = 'flex';
             } else {
-                loadData();
+                loadData(false);
+                startLiveSync();
             }
         });
+
+        /* --- ODA KUTULARI BOYUTU / YOĞUNLUK KONTROLLERİ (NORMAL / KOMPAKT PINCH) --- */
+        function initDensity() {
+            setDensity(isCompactDensity, false);
+        }
+
+        function setDensity(compact, showToast = true) {
+            isCompactDensity = compact;
+            localStorage.setItem('hk_grid_density', compact ? 'compact' : 'normal');
+            const grid = document.getElementById('gridContainer');
+            const icon = document.getElementById('densityIcon');
+            const btn = document.getElementById('densityBtn');
+
+            if (compact) {
+                grid.classList.add('grid-compact');
+                if (icon) icon.className = 'fas fa-expand-alt';
+                if (btn) btn.title = 'Standart Görünüm (Büyüt)';
+                if (showToast) showZoomToast('Kompakt Görünüm: Odalar 2x Küçültüldü (Daha Çok Oda)');
+            } else {
+                grid.classList.remove('grid-compact');
+                if (icon) icon.className = 'fas fa-compress-alt';
+                if (btn) btn.title = 'Kompakt Görünüm (Küçült)';
+                if (showToast) showZoomToast('Standart Görünüm: Normal Boyut');
+            }
+        }
+
+        function toggleDensity() {
+            setDensity(!isCompactDensity, true);
+        }
+
+        let zoomToastTimer = null;
+        function showZoomToast(text) {
+            const toast = document.getElementById('zoomToast');
+            if (!toast) return;
+            toast.querySelector('span').innerText = text;
+            toast.classList.add('show');
+            if (zoomToastTimer) clearTimeout(zoomToastTimer);
+            zoomToastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 1800);
+        }
+
+        /* --- MOBİL İKİ PARMAK İÇE/DIŞA KÜÇÜLTME (PINCH-IN / PINCH-OUT) DESTEĞİ --- */
+        function setupPinchGesture() {
+            const content = document.querySelector('.content');
+            if (!content) return;
+
+            let touchStartDist = 0;
+            let isPinching = false;
+
+            content.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    isPinching = true;
+                    touchStartDist = Math.hypot(
+                        e.touches[0].pageX - e.touches[1].pageX,
+                        e.touches[0].pageY - e.touches[1].pageY
+                    );
+                }
+            }, { passive: true });
+
+            content.addEventListener('touchmove', (e) => {
+                if (isPinching && e.touches.length === 2) {
+                    const currentDist = Math.hypot(
+                        e.touches[0].pageX - e.touches[1].pageX,
+                        e.touches[0].pageY - e.touches[1].pageY
+                    );
+                    const diff = currentDist - touchStartDist;
+
+                    // İçe doğru parmak sıkıştırma (Pinch-in -> Küçült / Kompakt yap)
+                    if (diff < -45 && !isCompactDensity) {
+                        setDensity(true, true);
+                        isPinching = false;
+                    } 
+                    // Dışa doğru parmak açma (Pinch-out -> Büyüt / Normal yap)
+                    else if (diff > 45 && isCompactDensity) {
+                        setDensity(false, true);
+                        isPinching = false;
+                    }
+                }
+            }, { passive: true });
+
+            content.addEventListener('touchend', (e) => {
+                if (e.touches.length < 2) {
+                    isPinching = false;
+                }
+            }, { passive: true });
+        }
+
+        function startLiveSync() {
+            if (liveSyncTimer) clearInterval(liveSyncTimer);
+            // Sedna ile 15 saniyede bir sessiz arka plan senkronizasyonu
+            liveSyncTimer = setInterval(() => {
+                const isAuth = sessionStorage.getItem('hk_auth') === 'true';
+                if (isAuth && !activeModalRoom) {
+                    loadData(true);
+                }
+            }, 15000);
+        }
+
+        function stopLiveSync() {
+            if (liveSyncTimer) {
+                clearInterval(liveSyncTimer);
+                liveSyncTimer = null;
+            }
+        }
 
         function initTheme() {
             const savedTheme = localStorage.getItem('hk_theme') || 'light';
@@ -1331,7 +1603,8 @@
             changeMaid(val);
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('loginPassInput').value = '';
-            loadData();
+            loadData(false);
+            startLiveSync();
         }
 
         function promptChangeMaid(val) {
@@ -1347,6 +1620,7 @@
         }
 
         function logout() {
+            stopLiveSync();
             localStorage.removeItem('hk_selected_maid');
             sessionStorage.removeItem('hk_auth');
             currentMaid = null;
@@ -1375,14 +1649,16 @@
             renderGrid(currentData);
         }
 
-        async function loadData() {
+        async function loadData(isSilent = false) {
             const grid = document.getElementById('gridContainer');
             const loader = document.getElementById('loader');
             const errorBox = document.getElementById('errorBox');
             
-            grid.innerHTML = '';
-            loader.style.display = 'block';
-            errorBox.style.display = 'none';
+            if (!isSilent) {
+                grid.innerHTML = '';
+                loader.style.display = 'block';
+                errorBox.style.display = 'none';
+            }
 
             try {
                 const res = await fetch('/api/hk/data');
@@ -1403,7 +1679,7 @@
 
                 if (data.error) throw new Error(data.error);
                 
-                // Update Guest KPI Stats (Inhouse / Gelen / Gidecek / C/Out-C/In / Dünden Kirli)
+                // Update Guest KPI Stats (Sedna Ön Büro ile %100 Birebir)
                 if (data.guest_stats) {
                     if (document.getElementById('countGuestInhOda')) {
                         document.getElementById('countGuestInhOda').innerText = data.guest_stats.inhouse ? data.guest_stats.inhouse.oda : 0;
@@ -1435,10 +1711,16 @@
                     executeRoomSearch();
                 }
             } catch (err) {
-                errorBox.innerText = "Yükleme Hatası: " + err.message;
-                errorBox.style.display = 'block';
+                if (!isSilent) {
+                    errorBox.innerText = "Yükleme Hatası: " + err.message;
+                    errorBox.style.display = 'block';
+                } else {
+                    console.warn("Sessiz arka plan senkronizasyon hatası:", err);
+                }
             } finally {
-                loader.style.display = 'none';
+                if (!isSilent) {
+                    loader.style.display = 'none';
+                }
             }
         }
 
@@ -1560,16 +1842,16 @@
                 let isDep = (item['BUGUN_GIDECEK'] || 0) > 0;
                 let coDurum = item['CO_DURUM'] || '';
                 let isDepHala = isDep && (coDurum.includes('ODADA_HALA') || coDurum.includes('ODADA'));
-                let isCoCi = (item['IS_CO_CI'] || 0) === 1 || (isArr && isDep);
-                let isInh = (item['DOLU_BOS'] || 0) > 0;
+                let isCoCi = (item['IS_CO_CI'] || 0) === 1 || (isArr && isDep && isDepHala);
+                let isInh = (item['DOLU_BOS'] || 0) > 0 && !isDepHala;
                 let isBK = (item['BOS_KIRLI'] || 0) === 1;
 
                 if (activeFilter === 'KİRLİ' || activeFilter === 'KIRLI') return isKirli(st);
                 if (activeFilter === 'TEMİZ' || activeFilter === 'TEMIZ') return isTemiz(st) || isOK(st);
                 if (activeFilter === 'OOO') return isOOO(st) || (item['DD_STATUS'] === 4);
                 if (activeFilter === 'BLOKELİ' || activeFilter === 'BLOKELI') return isBlokeli(st) || (item['DD_STATUS'] === 2);
-                if (activeFilter === 'GELEN') return isArr;
-                if (activeFilter === 'GIDECEK') return isDep;
+                if (activeFilter === 'GELEN') return isArr && !isCoCi;
+                if (activeFilter === 'GIDECEK') return isDepHala;
                 if (activeFilter === 'INHOUSE') return isInh;
                 if (activeFilter === 'COCI') return isCoCi;
                 if (activeFilter === 'BOS_KIRLI') return isBK;
@@ -1670,11 +1952,11 @@
                 if(statusRemark) combinedRemark += `${combinedRemark ? '<hr style="margin:6px 0; opacity:0.2">' : ''}<div><span class="remark-title">Durum Notu:</span>${statusRemark}</div>`;
 
                 let isOooRoom = isOOO(statusStr) || (item['DD_STATUS'] === 4);
-                let isBlokeliRoom = isBlokeli(statusStr) || (item['DD_STATUS'] === 2);
-                let isCoCiRoom = (item['IS_CO_CI'] === 1) || (isArrival && isDeparture);
+                let isVadRoom = (item['DD_STATUS'] === 2);
                 let isDepartureRoom = isDeparture && (coDurumVal.includes('ODADA_HALA') || coDurumVal.includes('ODADA'));
+                let isCoCiRoom = (item['IS_CO_CI'] === 1) || (isArrival && isDeparture && isDepartureRoom);
+                let isInhouseRoom = isOccupied && !isDepartureRoom;
                 let isArrivalRoom = isArrival && !isDepartureRoom && !isCoCiRoom;
-                let isInhouseRoom = isOccupied && !isDeparture && !isArrival;
                 let isCleanRoom = isTemiz(statusStr) || isOK(statusStr);
                 let isDirtyRoom = isKirli(statusStr);
                 let isBosKirli = (item['BOS_KIRLI'] || 0) === 1;
@@ -1687,45 +1969,55 @@
                 let currentLabel = 'KİRLİ';
 
                 if (currentShift === 'Morning') {
+                    let cleanText = isCleanRoom ? 'TEMİZ' : (isOooRoom ? 'ARIZALI' : 'KİRLİ');
+                    if (isOK(statusStr)) cleanText = 'HAZIR';
+
                     if (isOooRoom) {
                         bgColor = '#c084fc'; // Sedna Lila (Out of Order)
                         textColor = '#ffffff';
                         statusBg = 'rgba(0,0,0,0.25)';
                         statusColor = '#ffffff';
                         currentLabel = 'ARIZALI';
+                    } else if (isVadRoom) {
+                        bgColor = '#a16207'; // Sedna Kahverengi / V.A.D
+                        textColor = '#ffffff';
+                        borderStyle = '1.5px solid #854d0e';
+                        statusBg = 'rgba(0,0,0,0.25)';
+                        statusColor = '#ffffff';
+                        currentLabel = `V.A.D • ${cleanText}`;
                     } else if (isCoCiRoom) {
-                        bgColor = '#f472b6'; // Sedna Pembe (Checkout / Checkin)
+                        bgColor = '#f472b6'; // Sedna Pembe (Tahsisli & C/O-C/I)
                         textColor = '#831843';
                         borderStyle = '1.5px solid #ec4899';
                         statusBg = 'rgba(255,255,255,0.45)';
                         statusColor = '#831843';
-                        currentLabel = 'C/OUT - C/IN';
+                        currentLabel = `C/O-C/I • ${cleanText}`;
                     } else if (isDepartureRoom) {
                         bgColor = '#ef4444'; // Sedna Kırmızı (Departure / Çıkacaklar)
                         textColor = '#ffffff';
                         statusBg = 'rgba(0,0,0,0.25)';
                         statusColor = '#ffffff';
-                        currentLabel = 'GİDECEK';
+                        currentLabel = `GİDECEK • ${cleanText}`;
                     } else if (isInhouseRoom) {
                         bgColor = '#16a34a'; // Normal Yeşil (Inhouse)
                         textColor = '#ffffff';
                         borderStyle = '1.5px solid #15803d';
                         statusBg = 'rgba(0,0,0,0.22)';
                         statusColor = '#ffffff';
-                        currentLabel = 'INHOUSE';
+                        currentLabel = `INHOUSE • ${cleanText}`;
                     } else if (isArrivalRoom) {
                         bgColor = '#facc15'; // Sedna Sarısı (Arrival / Gelen)
                         textColor = '#713f12';
                         borderStyle = '1.5px solid #eab308';
                         statusBg = 'rgba(255,255,255,0.45)';
                         statusColor = '#713f12';
-                        currentLabel = 'GELEN';
-                    } else if (isBlokeliRoom) {
+                        currentLabel = `GELEN • ${cleanText}`;
+                    } else if (isBlokeli(statusStr)) {
                         bgColor = '#6366f1'; // Sedna Blokeli (İndigo)
                         textColor = '#ffffff';
                         statusBg = 'rgba(0,0,0,0.25)';
                         statusColor = '#ffffff';
-                        currentLabel = 'BLOKELİ';
+                        currentLabel = `BLOKELİ • ${cleanText}`;
                     } else if (isCleanRoom) {
                         bgColor = '#ffffff'; // Sedna Beyazı (Temiz Odalar)
                         textColor = '#0f172a';
@@ -1733,14 +2025,9 @@
                         statusBg = '#f1f5f9';
                         statusColor = '#1e293b';
                         currentLabel = isOK(statusStr) ? 'HAZIR' : 'TEMİZ';
-                    } else if (isBosKirli) {
-                        bgColor = '#f59e0b'; // Dünden Kirli (Turuncu)
-                        textColor = '#ffffff';
-                        statusBg = 'rgba(0,0,0,0.25)';
-                        statusColor = '#ffffff';
-                        currentLabel = 'DÜNDEN KİRLİ';
                     } else {
-                        bgColor = '#9ca3af'; // Sedna Grisi (Kirli)
+                        // Sedna Ön Büro'da tüm kirli odalar GRİ renktedir
+                        bgColor = '#9ca3af'; // Sedna Grisi
                         textColor = '#ffffff';
                         statusBg = 'rgba(0,0,0,0.25)';
                         statusColor = '#ffffff';
@@ -1763,6 +2050,12 @@
                 let remarkHtml = combinedRemark ? `<div class="remark-tooltip">${combinedRemark}</div>` : '';
                 let remarkDot = combinedRemark ? `<div class="remark-indicator">!</div>` : '';
                 
+                // Sağ üst köşe temizlik göstergesi (Tik / Süpürge / Arıza rozeti)
+                let cleanClass = isCleanRoom ? 'clean-ind-clean' : (isOooRoom ? 'clean-ind-ooo' : 'clean-ind-dirty');
+                let cleanIcon = isCleanRoom ? '<i class="fas fa-check"></i>' : (isOooRoom ? '<i class="fas fa-wrench"></i>' : '<i class="fas fa-broom"></i>');
+                let cleanTitle = isCleanRoom ? 'Temiz Oda' : (isOooRoom ? 'Arızalı Oda' : 'Kirli Oda');
+                let cleanDotHtml = `<div class="clean-indicator ${cleanClass} ${remarkDot ? 'has-remark' : ''}" title="${cleanTitle}">${cleanIcon}</div>`;
+
                 // Badges
                 let isLightBg = ['#ffffff', '#facc15', '#f472b6'].includes(bgColor);
                 let occColor = isOccupied ? (isLightBg ? '#15803d' : '#4ade80') : (isLightBg ? '#64748b' : 'rgba(255,255,255,0.7)');
@@ -1794,6 +2087,7 @@
                      onclick="openStatusModal('${roomNo}')">
                     ${remarkHtml}
                     ${remarkDot}
+                    ${cleanDotHtml}
                     ${badges}
                     <div class="room-no" style="color: ${textColor}">${roomNo}</div>
                     <div class="room-type" style="color: ${textColor}; opacity: 0.9">${roomType}</div>

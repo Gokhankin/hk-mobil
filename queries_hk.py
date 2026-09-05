@@ -122,7 +122,7 @@ def get_hk_status(conn) -> pd.DataFrame:
                 ELSE 0 
             END AS [BUGUN_GIDECEK],
             CASE 
-                WHEN (arr.HasArrival = 1 AND dep.Room IS NOT NULL) OR dd.[Status] = 3 THEN 1
+                WHEN (arr.HasArrival = 1 AND dep.OdadaHala = 1) OR dd.[Status] = 3 THEN 1
                 ELSE 0
             END AS [IS_CO_CI],
             CASE 
@@ -218,10 +218,10 @@ def set_hk_status(conn, room: str, status: int, maid_code: str = None):
     # HkStatus 1 = Kirli, 3 = OK/Hazır, 4 = OOO, 5 = Blokeli, 0 = Normal/Temiz
     hk_status_val = status if status in [1, 3, 4, 5] else 0
     
-    # DD Status Mapping: 4=OOO, 3=Blocked, 0=Neutral
+    # DD Status Mapping: 3=OOO (Sedna Standart OOO), 2=V.A.D/Blokeli, 0=Normal
     dd_status = 0
-    if status == 4: dd_status = 4
-    if status == 5: dd_status = 3 
+    if status == 4: dd_status = 3  # Sedna'da OOO kodu DailyDetail.Status = 3'tür (HkRoomRack & FnOOO standartı)
+    if status == 5: dd_status = 2  # Blokeli / V.A.D
     
     cursor = conn.cursor()
     
@@ -269,31 +269,54 @@ def set_evening_status(conn, room: str, status: int, maid_code: str = None):
 
 def get_guest_stats(conn):
     """
-    Sedna veritabanindan Gelen Musteri, Gidecek Musteri ve Inhouse Musteri (Oda & Pax) istatistiklerini tek bir hizli sorguda alir.
-    Grid query sonuclariyla %100 birebir senkronize calisir.
+    Sedna veritabanindan Sedna Ön Büro alt durum çubuğu ile %100 birebir örtüşen
+    Inhouse, Arrival, Giriş (C/In), Departure (Odada Hâlâ), Çıkış Yapan (C/Out) ve C/Out-C/In istatistiklerini alır.
     """
-    df_hk = get_hk_status(conn)
+    cursor = conn.cursor()
+    cursor.execute("""
+        DECLARE @Today DATE = CAST(GETDATE() AS DATE);
+        SELECT 
+            -- 1. Inhouse: Konaklayan aktif rezervasyonlar
+            (SELECT COUNT(DISTINCT RecId) FROM Reservation WHERE Status = 2 AND CAST(CheckinDate AS DATE) <= @Today AND CAST(CheckOutDate AS DATE) >= @Today AND StatusCode IN (0,1,2,3)) AS Inh_Res,
+            (SELECT ISNULL(SUM(Pax + ISNULL(Childs,0)),0) FROM Reservation WHERE Status = 2 AND CAST(CheckinDate AS DATE) <= @Today AND CAST(CheckOutDate AS DATE) >= @Today AND StatusCode IN (0,1,2,3)) AS Inh_Pax,
+            
+            -- 2. Arrival: Bugün beklenen girişler (Henüz gelmeyenler)
+            (SELECT COUNT(DISTINCT RecId) FROM Reservation WHERE Status = 1 AND CAST(CheckinDate AS DATE) = @Today AND StatusCode IN (0,1,2,3)) AS Arr_Res,
+            (SELECT ISNULL(SUM(Pax + ISNULL(Childs,0)),0) FROM Reservation WHERE Status = 1 AND CAST(CheckinDate AS DATE) = @Today AND StatusCode IN (0,1,2,3)) AS Arr_Pax,
+            
+            -- 3. Giriş Yapan: Bugün girişi yapılanlar (C/In)
+            (SELECT COUNT(DISTINCT RecId) FROM Reservation WHERE Status = 2 AND CAST(CheckinDate AS DATE) = @Today AND StatusCode IN (0,1,2,3)) AS Cin_Res,
+            (SELECT ISNULL(SUM(Pax + ISNULL(Childs,0)),0) FROM Reservation WHERE Status = 2 AND CAST(CheckinDate AS DATE) = @Today AND StatusCode IN (0,1,2,3)) AS Cin_Pax,
+            
+            -- 4. Departure: Bugün çıkış beklenen ama henüz çıkmamış olanlar (Odada Hâlâ)
+            (SELECT COUNT(DISTINCT RecId) FROM Reservation WHERE Status = 2 AND CAST(CheckOutDate AS DATE) = @Today AND StatusCode IN (0,1,2,3)) AS Dep_Res,
+            (SELECT ISNULL(SUM(Pax + ISNULL(Childs,0)),0) FROM Reservation WHERE Status = 2 AND CAST(CheckOutDate AS DATE) = @Today AND StatusCode IN (0,1,2,3)) AS Dep_Pax,
+            
+            -- 5. Çıkış Yapan: Bugün çıkışı tamamlanmış olanlar (C/Out)
+            (SELECT COUNT(DISTINCT RecId) FROM Reservation WHERE Status = 3 AND CAST(CheckOutDate AS DATE) = @Today AND StatusCode IN (0,1,2,3)) AS Cout_Res,
+            (SELECT ISNULL(SUM(Pax + ISNULL(Childs,0)),0) FROM Reservation WHERE Status = 3 AND CAST(CheckOutDate AS DATE) = @Today AND StatusCode IN (0,1,2,3)) AS Cout_Pax
+    """)
+    r = cursor.fetchone()
     
-    arr_df = df_hk[df_hk['BUGUN_GELEN'] == 1]
-    dep_df = df_hk[df_hk['BUGUN_GIDECEK'] == 1]
-    inh_df = df_hk[df_hk['DOLU_BOS'] == 1]
-    
-    def calc_pax(sub_df):
-        pax_total = 0
-        for _, row in sub_df.iterrows():
-            try:
-                p = int(row['Pax']) if row['Pax'] != '' else 0
-                c = int(row['Childs']) if row['Childs'] != '' else 0
-                pax_total += (p + c)
-            except Exception:
-                pass
-        return pax_total
+    # C/Out - C/In oda sayısı
+    cursor.execute("""
+        DECLARE @Today DATE = CAST(GETDATE() AS DATE);
+        SELECT COUNT(DISTINCT rm.Room)
+        FROM Room rm
+        LEFT JOIN DailyDetail dd ON rm.Room = dd.Room AND CAST(dd.StayDate AS DATE) = @Today
+        WHERE rm.ForeCast = 1 AND (
+            (EXISTS (SELECT 1 FROM Reservation a WHERE a.Room = rm.Room AND a.Status = 1 AND CAST(a.CheckinDate AS DATE) = @Today AND a.StatusCode IN (0,1,2,3))
+             AND EXISTS (SELECT 1 FROM Reservation d WHERE d.Room = rm.Room AND d.Status = 2 AND CAST(d.CheckOutDate AS DATE) = @Today AND d.StatusCode IN (0,1,2,3)))
+            OR dd.[Status] = 3
+        )
+    """)
+    coci_cnt = cursor.fetchone()[0] or 0
 
-    coci_df = df_hk[df_hk['IS_CO_CI'] == 1]
-    
     return {
-        "arrivals": {"oda": len(arr_df), "pax": calc_pax(arr_df)},
-        "departures": {"oda": len(dep_df), "pax": calc_pax(dep_df)},
-        "inhouse": {"oda": len(inh_df), "pax": calc_pax(inh_df)},
-        "coci": {"oda": len(coci_df), "pax": calc_pax(coci_df)}
+        "inhouse": {"oda": int(r[0] or 0), "pax": int(r[1] or 0)},
+        "arrivals": {"oda": int(r[2] or 0), "pax": int(r[3] or 0)},
+        "checkins": {"oda": int(r[4] or 0), "pax": int(r[5] or 0)},
+        "departures": {"oda": int(r[6] or 0), "pax": int(r[7] or 0)},
+        "checkouts": {"oda": int(r[8] or 0), "pax": int(r[9] or 0)},
+        "coci": {"oda": int(coci_cnt), "pax": 0}
     }
