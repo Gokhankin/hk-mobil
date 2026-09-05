@@ -70,6 +70,7 @@ def get_data():
                 "arrivals": {"oda": 0, "pax": 0},
                 "departures": {"oda": 0, "pax": 0},
                 "inhouse": {"oda": 0, "pax": 0},
+                "coci": {"oda": 0, "pax": 0},
                 "bos_kirli": {"oda": 0}
             }
         })

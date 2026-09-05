@@ -415,38 +415,52 @@
             opacity: 0.85;
         }
 
-        .sum-kirli { background: var(--red); color: white; }
-        .sum-temiz { background: var(--green); color: white; }
-        .sum-ooo { background: var(--dark-grey); color: white; }
-        .sum-blocked { background: #6366f1; color: white; }
-
-        .sum-gelen {
-            background: rgba(16, 185, 129, 0.25);
-            border: 1px solid rgba(52, 211, 153, 0.5);
-            color: #34d399;
-        }
-
-        .sum-gidecek {
-            background: rgba(244, 63, 94, 0.25);
-            border: 1px solid rgba(251, 113, 133, 0.5);
-            color: #fb7185;
-        }
-
+        /* Sedna Ön Büro Orijinal KPI Sayaç Renkleri */
         .sum-inhouse {
-            background: rgba(56, 189, 248, 0.25);
-            border: 1px solid rgba(56, 189, 248, 0.5);
-            color: #38bdf8;
+            background: #16a34a !important;
+            border: 1.5px solid #15803d !important;
+            color: #ffffff !important;
         }
-
+        .sum-gelen {
+            background: #facc15 !important;
+            border: 1.5px solid #eab308 !important;
+            color: #713f12 !important;
+        }
+        .sum-gidecek {
+            background: #ef4444 !important;
+            border: 1.5px solid #dc2626 !important;
+            color: #ffffff !important;
+        }
+        .sum-coci {
+            background: #f472b6 !important;
+            border: 1.5px solid #ec4899 !important;
+            color: #831843 !important;
+        }
+        .sum-kirli {
+            background: #9ca3af !important;
+            border: 1.5px solid #6b7280 !important;
+            color: #ffffff !important;
+        }
+        .sum-temiz {
+            background: #ffffff !important;
+            border: 1.5px solid #cbd5e1 !important;
+            color: #0f172a !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .sum-ooo {
+            background: #c084fc !important;
+            border: 1.5px solid #a855f7 !important;
+            color: #ffffff !important;
+        }
         .sum-bos-kirli {
-            background: rgba(245, 158, 11, 0.25);
-            border: 1px solid rgba(251, 191, 36, 0.6);
-            color: #d97706;
+            background: #f59e0b !important;
+            border: 1.5px solid #d97706 !important;
+            color: #ffffff !important;
         }
-        body.dark-mode .sum-bos-kirli {
-            color: #fbbf24;
-            background: rgba(245, 158, 11, 0.3);
-            border-color: rgba(251, 191, 36, 0.7);
+        .sum-blocked {
+            background: #6366f1 !important;
+            border: 1.5px solid #4f46e5 !important;
+            color: #ffffff !important;
         }
 
         /* Mobil 4-Sütun Düzeni & Sağa Sola Scroll (Taşma) Engelleme */
@@ -1168,8 +1182,13 @@
             </div>
         </div>
 
-        <!-- SATIR 2: Müşteri KPI Kartları (4 Eşit Boyutlu Kutucuk - İki Satırlı Sayılar) -->
+        <!-- SATIR 2: Sedna Ön Büro Müşteri & Hareket KPI Kartları (4 Eşit Boyutlu Kutucuk) -->
         <div class="guest-summary-bar">
+            <div class="guest-summary-item sum-inhouse" id="kpiInhouse" onclick="filterByGuest('INHOUSE')" style="cursor:pointer;" title="Inhouse müşterilerin odalarını listele">
+                <div class="guest-label"><i class="fas fa-bed"></i> Inhouse</div>
+                <div class="guest-value-oda"><span id="countGuestInhOda">0</span> Oda</div>
+                <div class="guest-sub-pax"><span id="countGuestInhPax">0</span> Pax</div>
+            </div>
             <div class="guest-summary-item sum-gelen" id="kpiGelen" onclick="filterByGuest('GELEN')" style="cursor:pointer;" title="Gelen müşterilerin odalarını listele">
                 <div class="guest-label"><i class="fas fa-plane-arrival"></i> Gelen</div>
                 <div class="guest-value-oda"><span id="countGuestArrOda">0</span> Oda</div>
@@ -1180,34 +1199,30 @@
                 <div class="guest-value-oda"><span id="countGuestDepOda">0</span> Oda</div>
                 <div class="guest-sub-pax"><span id="countGuestDepPax">0</span> Pax</div>
             </div>
-            <div class="guest-summary-item sum-inhouse" id="kpiInhouse" onclick="filterByGuest('INHOUSE')" style="cursor:pointer;" title="Inhouse müşterilerin odalarını listele">
-                <div class="guest-label"><i class="fas fa-bed"></i> Inhouse</div>
-                <div class="guest-value-oda"><span id="countGuestInhOda">0</span> Oda</div>
-                <div class="guest-sub-pax"><span id="countGuestInhPax">0</span> Pax</div>
-            </div>
-            <div class="guest-summary-item sum-bos-kirli" id="kpiBosKirli" onclick="filterByGuest('BOS_KIRLI')" style="cursor:pointer;" title="Dünden kalan boş kirli odaları listele">
-                <div class="guest-label"><i class="fas fa-broom"></i> Dünden Kirli</div>
-                <div class="guest-value-oda" style="margin-top:4px;"><span id="countGuestBosKirliOda">0</span> Oda</div>
+            <div class="guest-summary-item sum-coci" id="kpiCoci" onclick="filterByGuest('COCI')" style="cursor:pointer;" title="Aynı gün hem çıkış hem giriş olan (Turnaround) odalar">
+                <div class="guest-label"><i class="fas fa-exchange-alt"></i> C/Out - C/In</div>
+                <div class="guest-value-oda"><span id="countGuestCociOda">0</span> Oda</div>
+                <div class="guest-sub-pax"><span id="countGuestCociPax">0</span> Pax</div>
             </div>
         </div>
 
-        <!-- SATIR 3: Oda Durum KPI Kartları (4 Eşit Boyutlu Kutucuk) -->
+        <!-- SATIR 3: Sedna Ön Büro Oda Durum KPI Kartları (4 Eşit Boyutlu Kutucuk) -->
         <div class="summary-bar">
-            <div class="summary-item sum-kirli" id="kpiKirli" onclick="filterByStatus('KİRLİ')">
+            <div class="summary-item sum-kirli" id="kpiKirli" onclick="filterByStatus('KİRLİ')" title="Kirli odaları listele">
                 <div class="summary-value" id="countDirty">0</div>
                 <div class="summary-label">Kirli</div>
             </div>
-            <div class="summary-item sum-temiz" id="kpiTemiz" onclick="filterByStatus('TEMİZ')">
+            <div class="summary-item sum-temiz" id="kpiTemiz" onclick="filterByStatus('TEMİZ')" title="Temiz odaları listele">
                 <div class="summary-value" id="countClean">0</div>
                 <div class="summary-label">Temiz</div>
             </div>
-            <div class="summary-item sum-ooo" id="kpiOoo" onclick="filterByStatus('OOO')">
+            <div class="summary-item sum-ooo" id="kpiOoo" onclick="filterByStatus('OOO')" title="Arızalı (Out of Order) odaları listele">
                 <div class="summary-value" id="countOOO">0</div>
                 <div class="summary-label">Arızalı</div>
             </div>
-            <div class="summary-item sum-blocked" id="kpiBlocked" onclick="filterByStatus('BLOKELİ')">
-                <div class="summary-value" id="countBlocked">0</div>
-                <div class="summary-label">Blokeli</div>
+            <div class="summary-item sum-bos-kirli" id="kpiBosKirli" onclick="filterByGuest('BOS_KIRLI')" title="Dünden kalan boş kirli odaları listele">
+                <div class="summary-value" id="countGuestBosKirliOda">0</div>
+                <div class="summary-label">Dünden Kirli</div>
             </div>
         </div>
 
@@ -1388,14 +1403,24 @@
 
                 if (data.error) throw new Error(data.error);
                 
-                // Update Guest KPI Stats (Gelen / Gidecek / Inhouse / Dünden Kirli)
+                // Update Guest KPI Stats (Inhouse / Gelen / Gidecek / C/Out-C/In / Dünden Kirli)
                 if (data.guest_stats) {
-                    document.getElementById('countGuestArrOda').innerText = data.guest_stats.arrivals.oda;
-                    document.getElementById('countGuestArrPax').innerText = data.guest_stats.arrivals.pax;
-                    document.getElementById('countGuestDepOda').innerText = data.guest_stats.departures.oda;
-                    document.getElementById('countGuestDepPax').innerText = data.guest_stats.departures.pax;
-                    document.getElementById('countGuestInhOda').innerText = data.guest_stats.inhouse.oda;
-                    document.getElementById('countGuestInhPax').innerText = data.guest_stats.inhouse.pax;
+                    if (document.getElementById('countGuestInhOda')) {
+                        document.getElementById('countGuestInhOda').innerText = data.guest_stats.inhouse ? data.guest_stats.inhouse.oda : 0;
+                        document.getElementById('countGuestInhPax').innerText = data.guest_stats.inhouse ? data.guest_stats.inhouse.pax : 0;
+                    }
+                    if (document.getElementById('countGuestArrOda')) {
+                        document.getElementById('countGuestArrOda').innerText = data.guest_stats.arrivals ? data.guest_stats.arrivals.oda : 0;
+                        document.getElementById('countGuestArrPax').innerText = data.guest_stats.arrivals ? data.guest_stats.arrivals.pax : 0;
+                    }
+                    if (document.getElementById('countGuestDepOda')) {
+                        document.getElementById('countGuestDepOda').innerText = data.guest_stats.departures ? data.guest_stats.departures.oda : 0;
+                        document.getElementById('countGuestDepPax').innerText = data.guest_stats.departures ? data.guest_stats.departures.pax : 0;
+                    }
+                    if (document.getElementById('countGuestCociOda')) {
+                        document.getElementById('countGuestCociOda').innerText = data.guest_stats.coci ? data.guest_stats.coci.oda : 0;
+                        document.getElementById('countGuestCociPax').innerText = data.guest_stats.coci ? data.guest_stats.coci.pax : 0;
+                    }
                     if (data.guest_stats.bos_kirli && document.getElementById('countGuestBosKirliOda')) {
                         document.getElementById('countGuestBosKirliOda').innerText = data.guest_stats.bos_kirli.oda;
                     }
@@ -1460,27 +1485,22 @@
         let activeFilter = null;
 
         function updateKpiHighlights() {
-            const statusKpis = ['kpiKirli', 'kpiTemiz', 'kpiOoo', 'kpiBlocked'];
-            statusKpis.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.classList.remove('kpi-active');
-            });
-
-            const guestKpis = ['kpiGelen', 'kpiGidecek', 'kpiInhouse', 'kpiBosKirli'];
-            guestKpis.forEach(id => {
+            const allKpiIds = ['kpiInhouse', 'kpiGelen', 'kpiGidecek', 'kpiCoci', 'kpiKirli', 'kpiTemiz', 'kpiOoo', 'kpiBosKirli', 'kpiBlocked'];
+            allKpiIds.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('kpi-active');
             });
 
             let activeId = null;
-            if (activeFilter === 'KİRLİ') activeId = 'kpiKirli';
-            else if (activeFilter === 'TEMİZ') activeId = 'kpiTemiz';
-            else if (activeFilter === 'OOO') activeId = 'kpiOoo';
-            else if (activeFilter === 'BLOKELİ') activeId = 'kpiBlocked';
+            if (activeFilter === 'INHOUSE') activeId = 'kpiInhouse';
             else if (activeFilter === 'GELEN') activeId = 'kpiGelen';
             else if (activeFilter === 'GIDECEK') activeId = 'kpiGidecek';
-            else if (activeFilter === 'INHOUSE') activeId = 'kpiInhouse';
+            else if (activeFilter === 'COCI') activeId = 'kpiCoci';
+            else if (activeFilter === 'KİRLİ') activeId = 'kpiKirli';
+            else if (activeFilter === 'TEMİZ') activeId = 'kpiTemiz';
+            else if (activeFilter === 'OOO') activeId = 'kpiOoo';
             else if (activeFilter === 'BOS_KIRLI') activeId = 'kpiBosKirli';
+            else if (activeFilter === 'BLOKELİ') activeId = 'kpiBlocked';
 
             if (activeId) {
                 const activeEl = document.getElementById(activeId);
@@ -1536,14 +1556,23 @@
             }
             const filtered = currentData.filter(item => {
                 let st = item['DURUM'] || '';
+                let isArr = (item['BUGUN_GELEN'] || 0) > 0;
+                let isDep = (item['BUGUN_GIDECEK'] || 0) > 0;
+                let coDurum = item['CO_DURUM'] || '';
+                let isDepHala = isDep && (coDurum.includes('ODADA_HALA') || coDurum.includes('ODADA'));
+                let isCoCi = (item['IS_CO_CI'] || 0) === 1 || (isArr && isDep);
+                let isInh = (item['DOLU_BOS'] || 0) > 0;
+                let isBK = (item['BOS_KIRLI'] || 0) === 1;
+
                 if (activeFilter === 'KİRLİ' || activeFilter === 'KIRLI') return isKirli(st);
-                if (activeFilter === 'TEMİZ' || activeFilter === 'TEMIZ') return isTemiz(st);
-                if (activeFilter === 'OOO') return isOOO(st);
-                if (activeFilter === 'BLOKELİ' || activeFilter === 'BLOKELI') return isBlokeli(st);
-                if (activeFilter === 'GELEN') return (item['BUGUN_GELEN'] || 0) > 0;
-                if (activeFilter === 'GIDECEK') return (item['BUGUN_GIDECEK'] || 0) > 0;
-                if (activeFilter === 'INHOUSE') return (item['DOLU_BOS'] || 0) > 0;
-                if (activeFilter === 'BOS_KIRLI') return (item['BOS_KIRLI'] || 0) > 0;
+                if (activeFilter === 'TEMİZ' || activeFilter === 'TEMIZ') return isTemiz(st) || isOK(st);
+                if (activeFilter === 'OOO') return isOOO(st) || (item['DD_STATUS'] === 4);
+                if (activeFilter === 'BLOKELİ' || activeFilter === 'BLOKELI') return isBlokeli(st) || (item['DD_STATUS'] === 2);
+                if (activeFilter === 'GELEN') return isArr;
+                if (activeFilter === 'GIDECEK') return isDep;
+                if (activeFilter === 'INHOUSE') return isInh;
+                if (activeFilter === 'COCI') return isCoCi;
+                if (activeFilter === 'BOS_KIRLI') return isBK;
                 return true;
             });
             renderGrid(filtered);
@@ -1601,15 +1630,16 @@
             if (loader) loader.style.display = 'none';
 
             let html = '';
-            let cDirty = 0, cClean = 0, cOOO = 0, cBlocked = 0;
+            let cDirty = 0, cClean = 0, cOOO = 0, cBosKirli = 0;
 
             // Sayaçlar her zaman ana listeden hesaplanır
             currentData.forEach(item => {
                 let st = item['DURUM'] || '';
+                let isBK = (item['BOS_KIRLI'] || 0) === 1;
+                if (isBK) cBosKirli++;
                 if (isKirli(st)) cDirty++;
-                else if (isTemiz(st)) cClean++;
-                else if (isOOO(st)) cOOO++;
-                else if (isBlokeli(st)) cBlocked++;
+                else if (isTemiz(st) || isOK(st)) cClean++;
+                else if (isOOO(st) || (item['DD_STATUS'] === 4)) cOOO++;
             });
 
             if (items.length === 0) {
@@ -1617,7 +1647,7 @@
                 document.getElementById('countDirty').innerText = cDirty;
                 document.getElementById('countClean').innerText = cClean;
                 document.getElementById('countOOO').innerText = cOOO;
-                document.getElementById('countBlocked').innerText = cBlocked;
+                if (document.getElementById('countGuestBosKirliOda')) document.getElementById('countGuestBosKirliOda').innerText = cBosKirli;
                 return;
             }
 
@@ -1626,9 +1656,9 @@
                 let roomType = item['TIP'];
                 let statusStr = item['DURUM'] || '';
                 let eveningDone = item['AKSAM_SERVISI'] || 0;
-                let isOccupied = item['DOLU_BOS'] || 0;
-                let isArrival = item['BUGUN_GELEN'] || 0;
-                let isDeparture = item['BUGUN_GIDECEK'] || 0;
+                let isOccupied = (item['DOLU_BOS'] || 0) === 1;
+                let isArrival = (item['BUGUN_GELEN'] || 0) === 1;
+                let isDeparture = (item['BUGUN_GIDECEK'] || 0) === 1;
                 let roomRemark = item['REMARK'] || ''; 
                 let statusRemark = item['STATUS_REMARK'] || ''; 
                 let agencyVal = item['ACENTE'] || '';
@@ -1639,39 +1669,92 @@
                 if(roomRemark) combinedRemark += `<div><span class="remark-title">Oda Notu:</span>${roomRemark}</div>`;
                 if(statusRemark) combinedRemark += `${combinedRemark ? '<hr style="margin:6px 0; opacity:0.2">' : ''}<div><span class="remark-title">Durum Notu:</span>${statusRemark}</div>`;
 
-                let bgColor = 'var(--grey)'; 
-                let currentLabel = isKirli(statusStr) ? 'KİRLİ' : (isTemiz(statusStr) ? 'TEMİZ' : (isOOO(statusStr) ? 'OOO' : (isBlokeli(statusStr) ? 'BLOKELİ' : statusStr)));
+                let isOooRoom = isOOO(statusStr) || (item['DD_STATUS'] === 4);
+                let isBlokeliRoom = isBlokeli(statusStr) || (item['DD_STATUS'] === 2);
+                let isCoCiRoom = (item['IS_CO_CI'] === 1) || (isArrival && isDeparture);
+                let isDepartureRoom = isDeparture && (coDurumVal.includes('ODADA_HALA') || coDurumVal.includes('ODADA'));
+                let isArrivalRoom = isArrival && !isDepartureRoom && !isCoCiRoom;
+                let isInhouseRoom = isOccupied && !isDeparture && !isArrival;
+                let isCleanRoom = isTemiz(statusStr) || isOK(statusStr);
+                let isDirtyRoom = isKirli(statusStr);
+                let isBosKirli = (item['BOS_KIRLI'] || 0) === 1;
 
-                let isBosKirli = (item['BOS_KIRLI'] || 0) === 1 && (item['BUGUN_GELEN'] || 0) === 0 && (item['BUGUN_GIDECEK'] || 0) === 0 && (item['DOLU_BOS'] || 0) === 0 && isKirli(statusStr);
+                let bgColor = '#9ca3af'; // Sedna Gri
+                let textColor = '#ffffff';
+                let borderStyle = '1px solid rgba(0,0,0,0.08)';
+                let statusBg = 'rgba(0,0,0,0.25)';
+                let statusColor = '#ffffff';
+                let currentLabel = 'KİRLİ';
+
                 if (currentShift === 'Morning') {
-                    if (isBosKirli) {
-                        bgColor = '#d97706';
-                        currentLabel = 'DÜNDEN KİRLİ';
-                    } else if (isOK(statusStr)) {
-                        bgColor = 'var(--yellow)';
-                        currentLabel = 'HAZIR';
-                    } else if (isTemiz(statusStr)) {
-                        bgColor = 'var(--green)';
-                        currentLabel = 'TEMİZ';
-                    } else if (isKirli(statusStr)) {
-                        bgColor = 'var(--red)';
-                        currentLabel = 'KİRLİ';
-                    } else if (isOOO(statusStr)) {
-                        bgColor = 'var(--dark-grey)';
-                        currentLabel = 'OOO';
-                    } else if (isBlokeli(statusStr)) {
-                        bgColor = '#6366f1'; 
+                    if (isOooRoom) {
+                        bgColor = '#c084fc'; // Sedna Lila (Out of Order)
+                        textColor = '#ffffff';
+                        statusBg = 'rgba(0,0,0,0.25)';
+                        statusColor = '#ffffff';
+                        currentLabel = 'ARIZALI';
+                    } else if (isCoCiRoom) {
+                        bgColor = '#f472b6'; // Sedna Pembe (Checkout / Checkin)
+                        textColor = '#831843';
+                        borderStyle = '1.5px solid #ec4899';
+                        statusBg = 'rgba(255,255,255,0.45)';
+                        statusColor = '#831843';
+                        currentLabel = 'C/OUT - C/IN';
+                    } else if (isDepartureRoom) {
+                        bgColor = '#ef4444'; // Sedna Kırmızı (Departure / Çıkacaklar)
+                        textColor = '#ffffff';
+                        statusBg = 'rgba(0,0,0,0.25)';
+                        statusColor = '#ffffff';
+                        currentLabel = 'GİDECEK';
+                    } else if (isInhouseRoom) {
+                        bgColor = '#16a34a'; // Normal Yeşil (Inhouse)
+                        textColor = '#ffffff';
+                        borderStyle = '1.5px solid #15803d';
+                        statusBg = 'rgba(0,0,0,0.22)';
+                        statusColor = '#ffffff';
+                        currentLabel = 'INHOUSE';
+                    } else if (isArrivalRoom) {
+                        bgColor = '#facc15'; // Sedna Sarısı (Arrival / Gelen)
+                        textColor = '#713f12';
+                        borderStyle = '1.5px solid #eab308';
+                        statusBg = 'rgba(255,255,255,0.45)';
+                        statusColor = '#713f12';
+                        currentLabel = 'GELEN';
+                    } else if (isBlokeliRoom) {
+                        bgColor = '#6366f1'; // Sedna Blokeli (İndigo)
+                        textColor = '#ffffff';
+                        statusBg = 'rgba(0,0,0,0.25)';
+                        statusColor = '#ffffff';
                         currentLabel = 'BLOKELİ';
+                    } else if (isCleanRoom) {
+                        bgColor = '#ffffff'; // Sedna Beyazı (Temiz Odalar)
+                        textColor = '#0f172a';
+                        borderStyle = '1.5px solid #cbd5e1';
+                        statusBg = '#f1f5f9';
+                        statusColor = '#1e293b';
+                        currentLabel = isOK(statusStr) ? 'HAZIR' : 'TEMİZ';
+                    } else if (isBosKirli) {
+                        bgColor = '#f59e0b'; // Dünden Kirli (Turuncu)
+                        textColor = '#ffffff';
+                        statusBg = 'rgba(0,0,0,0.25)';
+                        statusColor = '#ffffff';
+                        currentLabel = 'DÜNDEN KİRLİ';
                     } else {
-                        bgColor = 'var(--red)';
+                        bgColor = '#9ca3af'; // Sedna Grisi (Kirli)
+                        textColor = '#ffffff';
+                        statusBg = 'rgba(0,0,0,0.25)';
+                        statusColor = '#ffffff';
                         currentLabel = 'KİRLİ';
                     }
                 } else {
+                    // Evening Shift
                     if (eveningDone) {
                         bgColor = '#8b5cf6'; 
+                        textColor = '#ffffff';
                         currentLabel = 'AKŞAM TAMAM';
                     } else {
                         bgColor = '#4b5563'; 
+                        textColor = '#ffffff';
                         currentLabel = 'BEKLİYOR';
                     }
                 }
@@ -1681,7 +1764,8 @@
                 let remarkDot = combinedRemark ? `<div class="remark-indicator">!</div>` : '';
                 
                 // Badges
-                let occColor = isOccupied ? '#4ade80' : 'rgba(255,255,255,0.7)';
+                let isLightBg = ['#ffffff', '#facc15', '#f472b6'].includes(bgColor);
+                let occColor = isOccupied ? (isLightBg ? '#15803d' : '#4ade80') : (isLightBg ? '#64748b' : 'rgba(255,255,255,0.7)');
                 let badges = '<div class="room-badges">';
                 badges += `<i class="fas fa-user badge-icon" style="color: ${occColor}" title="${isOccupied ? 'Dolu Oda' : 'Boş Oda'}"></i>`;
                 if(isArrival) badges += `<i class="fas fa-sign-in-alt badge-icon badge-in" title="Bugün Giriş"></i>`;
@@ -1706,16 +1790,16 @@
                 }
 
                 html += `
-                <div class="room-card" id="room-card-${roomNo}" style="background: ${bgColor}; animation-delay: ${delay}s" 
+                <div class="room-card" id="room-card-${roomNo}" style="background: ${bgColor}; color: ${textColor}; border: ${borderStyle}; animation-delay: ${delay}s" 
                      onclick="openStatusModal('${roomNo}')">
                     ${remarkHtml}
                     ${remarkDot}
                     ${badges}
-                    <div class="room-no">${roomNo}</div>
-                    <div class="room-type">${roomType}</div>
+                    <div class="room-no" style="color: ${textColor}">${roomNo}</div>
+                    <div class="room-type" style="color: ${textColor}; opacity: 0.9">${roomType}</div>
                     ${coBadgeHtml}
                     ${agencyBadgeHtml}
-                    <div class="room-status" style="font-size:0.5rem">${currentLabel}</div>
+                    <div class="room-status" style="font-size:0.5rem; background: ${statusBg}; color: ${statusColor}; font-weight:800">${currentLabel}</div>
                 </div>`;
             });
 
@@ -1723,7 +1807,7 @@
             document.getElementById('countDirty').innerText = cDirty;
             document.getElementById('countClean').innerText = cClean;
             document.getElementById('countOOO').innerText = cOOO;
-            document.getElementById('countBlocked').innerText = cBlocked;
+            if (document.getElementById('countGuestBosKirliOda')) document.getElementById('countGuestBosKirliOda').innerText = cBosKirli;
         }
 
         /* --- GÜVENLİ ODA DURUMU MODALI (GÜVENLİK POPUP) --- */
@@ -1844,16 +1928,16 @@
 
                 optsHtml = `
                     <div class="status-opt-btn ${selectedNewStatus===1?'active':''}" onclick="selectModalStatus(1, this)">
-                        <div class="status-opt-dot" style="background:var(--red)"></div> KİRLİ
+                        <div class="status-opt-dot" style="background:#9ca3af"></div> KİRLİ
                     </div>
                     <div class="status-opt-btn ${selectedNewStatus===2?'active':''}" onclick="selectModalStatus(2, this)">
-                        <div class="status-opt-dot" style="background:var(--green)"></div> TEMİZ
+                        <div class="status-opt-dot" style="background:#ffffff; border:1.5px solid #cbd5e1"></div> TEMİZ
                     </div>
                     <div class="status-opt-btn ${selectedNewStatus===3?'active':''}" onclick="selectModalStatus(3, this)">
-                        <div class="status-opt-dot" style="background:var(--yellow)"></div> HAZIR (OK)
+                        <div class="status-opt-dot" style="background:#facc15"></div> HAZIR (OK)
                     </div>
                     <div class="status-opt-btn ${selectedNewStatus===4?'active':''}" onclick="selectModalStatus(4, this)">
-                        <div class="status-opt-dot" style="background:var(--dark-grey)"></div> ARIZALI (OOO)
+                        <div class="status-opt-dot" style="background:#c084fc"></div> ARIZALI (OOO)
                     </div>
                     <div class="status-opt-btn full-width ${selectedNewStatus===5?'active':''}" onclick="selectModalStatus(5, this)">
                         <div class="status-opt-dot" style="background:#6366f1"></div> BLOKELİ

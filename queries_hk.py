@@ -62,6 +62,23 @@ def get_hk_status(conn) -> pd.DataFrame:
                   OR CAST(r.CheckOutDate AS DATE) = @Today
               )
         ),
+        TodayArr AS (
+            SELECT DISTINCT COALESCE(NULLIF(r.Room, ''), rm_ref.Room) AS Room, 1 AS HasArrival
+            FROM Reservation r
+            LEFT JOIN Room rm_ref ON r.RoomNummer = rm_ref.RecId
+            WHERE r.StatusCode IN (0,1,2,3) AND r.Status = 1 AND CAST(r.CheckinDate AS DATE) = @Today
+              AND ISNULL(r.Voucher, '') NOT LIKE '%NOSHOW%' AND ISNULL(r.ResRemark, '') NOT LIKE '%NOSHOW%'
+        ),
+        TodayDep AS (
+            SELECT DISTINCT COALESCE(NULLIF(r.Room, ''), rm_ref.Room) AS Room, 
+                   MAX(CASE WHEN r.Status = 2 THEN 1 ELSE 0 END) AS OdadaHala,
+                   MAX(CASE WHEN r.Status = 3 THEN 1 ELSE 0 END) AS CikisYapildi
+            FROM Reservation r
+            LEFT JOIN Room rm_ref ON r.RoomNummer = rm_ref.RecId
+            WHERE r.StatusCode IN (0,1,2,3) AND r.Status IN (2,3) AND CAST(r.CheckOutDate AS DATE) = @Today
+              AND ISNULL(r.Voucher, '') NOT LIKE '%NOSHOW%' AND ISNULL(r.ResRemark, '') NOT LIKE '%NOSHOW%'
+            GROUP BY COALESCE(NULLIF(r.Room, ''), rm_ref.Room)
+        ),
         TodayDD AS (
             SELECT Room, [Status], StatusRemark,
                    ROW_NUMBER() OVER (PARTITION BY Room ORDER BY RecId DESC) AS rn
@@ -97,12 +114,17 @@ def get_hk_status(conn) -> pd.DataFrame:
             END AS [CHECKOUT_TARIHI],
             CASE WHEN ISNULL(res.Remark, '') <> '' THEN res.Remark ELSE res.ResRemark END AS [REZ_NOTU],
             CASE WHEN res.Status = 2 AND CAST(res.CheckinDate AS DATE) <= @Today AND CAST(res.CheckOutDate AS DATE) >= @Today THEN 1 ELSE 0 END AS [DOLU_BOS],
-            CASE WHEN res.Status = 1 AND CAST(res.CheckinDate AS DATE) = @Today THEN 1 ELSE 0 END AS [BUGUN_GELEN],
+            CASE WHEN arr.HasArrival = 1 THEN 1 WHEN res.Status = 1 AND CAST(res.CheckinDate AS DATE) = @Today THEN 1 ELSE 0 END AS [BUGUN_GELEN],
             CASE 
+                WHEN dep.Room IS NOT NULL THEN 1
                 WHEN (res.Status = 2 OR res.Status = 3) AND CAST(res.CheckOutDate AS DATE) = @Today THEN 1 
                 WHEN ms.CheckOutDate = @Today THEN 1
                 ELSE 0 
             END AS [BUGUN_GIDECEK],
+            CASE 
+                WHEN (arr.HasArrival = 1 AND dep.Room IS NOT NULL) OR dd.[Status] = 3 THEN 1
+                ELSE 0
+            END AS [IS_CO_CI],
             CASE 
                 WHEN (rm.DirtyClean = 1 OR rm.HkStatus = 1) 
                      AND rm.HkStatus NOT IN (4, 5)
@@ -115,6 +137,8 @@ def get_hk_status(conn) -> pd.DataFrame:
                 THEN 1 ELSE 0 
             END AS [BOS_KIRLI],
             CASE 
+                WHEN dep.OdadaHala = 1 THEN 'ODADA_HALA'
+                WHEN dep.CikisYapildi = 1 THEN 'CO_YAPILDI'
                 WHEN CAST(res.CheckOutDate AS DATE) = @Today AND res.Status = 3 THEN 'CO_YAPILDI'
                 WHEN CAST(res.CheckOutDate AS DATE) = @Today AND res.Status = 2 THEN 'ODADA_HALA'
                 WHEN ms.CheckOutDate = @Today THEN 'CO_YAPILDI'
@@ -122,6 +146,7 @@ def get_hk_status(conn) -> pd.DataFrame:
             END AS [CO_DURUM],
             ISNULL(res.LateCOut, '') AS [UZATMA_SAATI],
             dd.StatusRemark AS [STATUS_REMARK],
+            ISNULL(dd.[Status], 0) AS [DD_STATUS],
             CASE 
                 WHEN dd.[Status] = 4 THEN 'ARIZALI (OOO)'
                 WHEN dd.[Status] = 3 THEN 'BLOKELI'
@@ -140,6 +165,8 @@ def get_hk_status(conn) -> pd.DataFrame:
             ISNULL(res.Childs, ms.Childs) AS Childs
         FROM Room rm
         LEFT JOIN ActiveRes res ON rm.Room = res.MatchRoom AND res.rn = 1
+        LEFT JOIN TodayArr arr ON rm.Room = arr.Room
+        LEFT JOIN TodayDep dep ON rm.Room = dep.Room
         LEFT JOIN MorningSnapshot ms ON rm.Room = ms.Room AND ms.rn = 1
         LEFT JOIN TodayDD dd ON rm.Room = dd.Room AND dd.rn = 1
         LEFT JOIN TodayRC rc ON rm.Room = rc.Room
@@ -262,8 +289,11 @@ def get_guest_stats(conn):
                 pass
         return pax_total
 
+    coci_df = df_hk[df_hk['IS_CO_CI'] == 1]
+    
     return {
         "arrivals": {"oda": len(arr_df), "pax": calc_pax(arr_df)},
         "departures": {"oda": len(dep_df), "pax": calc_pax(dep_df)},
-        "inhouse": {"oda": len(inh_df), "pax": calc_pax(inh_df)}
+        "inhouse": {"oda": len(inh_df), "pax": calc_pax(inh_df)},
+        "coci": {"oda": len(coci_df), "pax": calc_pax(coci_df)}
     }
