@@ -55,17 +55,23 @@ def get_data():
         guest_stats = queries.get_guest_stats(conn)
         bos_kirli_cnt = len(df[df['BOS_KIRLI'] == 1]) if 'BOS_KIRLI' in df.columns else 0
         guest_stats['bos_kirli'] = {'oda': int(bos_kirli_cnt)}
+        room_changes = queries.get_room_changes(conn)
+        late_checkouts = queries.get_late_checkouts(conn)
         items = df.to_dict(orient='records')
         return jsonify({
             "connected": True,
             "items": items,
-            "guest_stats": guest_stats
+            "guest_stats": guest_stats,
+            "room_changes": room_changes,
+            "late_checkouts": late_checkouts
         })
     except Exception as e:
         return jsonify({
             "connected": False,
             "error": str(e),
             "items": [],
+            "room_changes": [],
+            "late_checkouts": [],
             "guest_stats": {
                 "arrivals": {"oda": 0, "pax": 0},
                 "departures": {"oda": 0, "pax": 0},
@@ -74,6 +80,23 @@ def get_data():
                 "bos_kirli": {"oda": 0}
             }
         })
+
+@app.route('/api/hk/rc_history')
+def get_rc_history():
+    try:
+        import queries_hk as queries
+        target_date = request.args.get('date') # Format: YYYY-MM-DD
+        conn = get_connection()
+        rc_list = queries.get_room_changes(conn, target_date)
+        late_list = queries.get_late_checkouts(conn, target_date)
+        return jsonify({
+            "success": True,
+            "date": target_date,
+            "room_changes": rc_list,
+            "late_checkouts": late_list
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/hk/maids')
 def get_maids():

@@ -88,9 +88,31 @@ def get_hk_status(conn) -> pd.DataFrame:
         TodayRC AS (
             SELECT DISTINCT Room
             FROM (
+                -- 1. Sedna Resmi RC Plan Tablosu
                 SELECT OldRoom AS Room FROM RoomChangePlan WHERE (CAST(RCDate AS DATE) = @Today OR CAST(RecordDate AS DATE) = @Today)
                 UNION
                 SELECT NewRoom AS Room FROM RoomChangePlan WHERE (CAST(RCDate AS DATE) = @Today OR CAST(RecordDate AS DATE) = @Today)
+                UNION
+                -- 2. DailyDetail üzerinden fiili Room Change: Dün bu odada kalıp bugün başka odaya aktarılanlar
+                SELECT dd_old.Room AS Room
+                FROM DailyDetail dd_new
+                JOIN DailyDetail dd_old ON dd_new.ReservationId = dd_old.ReservationId 
+                     AND dd_old.StayDate = DATEADD(day, -1, dd_new.StayDate) 
+                     AND dd_old.Room <> dd_new.Room
+                WHERE CAST(dd_new.StayDate AS DATE) = @Today
+                  AND dd_new.ReservationId > 0
+                  AND ISNULL(dd_old.Room, '') <> '' 
+                  AND ISNULL(dd_new.Room, '') <> ''
+                UNION
+                SELECT dd_new.Room AS Room
+                FROM DailyDetail dd_new
+                JOIN DailyDetail dd_old ON dd_new.ReservationId = dd_old.ReservationId 
+                     AND dd_old.StayDate = DATEADD(day, -1, dd_new.StayDate) 
+                     AND dd_old.Room <> dd_new.Room
+                WHERE CAST(dd_new.StayDate AS DATE) = @Today
+                  AND dd_new.ReservationId > 0
+                  AND ISNULL(dd_old.Room, '') <> '' 
+                  AND ISNULL(dd_new.Room, '') <> ''
             ) rc_all
             WHERE ISNULL(Room, '') <> ''
         )
@@ -136,6 +158,9 @@ def get_hk_status(conn) -> pd.DataFrame:
                      AND ms.DirtyClean = 1
                 THEN 1 ELSE 0 
             END AS [BOS_KIRLI],
+            CASE 
+                WHEN rc.Room IS NOT NULL THEN 1 ELSE 0
+            END AS [IS_ROOM_CHANGE],
             CASE 
                 WHEN dep.OdadaHala = 1 THEN 'ODADA_HALA'
                 WHEN dep.CikisYapildi = 1 THEN 'CO_YAPILDI'
@@ -320,3 +345,87 @@ def get_guest_stats(conn):
         "checkouts": {"oda": int(r[8] or 0), "pax": int(r[9] or 0)},
         "coci": {"oda": int(coci_cnt), "pax": 0}
     }
+
+def get_room_changes(conn, target_date=None):
+    """Belirtilen tarihte (varsayılan bugün) gerçekleşen veya planlanan Room Change listesini döndürür."""
+    cursor = conn.cursor()
+    cursor.execute("""
+        DECLARE @TargetDate DATE = COALESCE(?, CAST(GETDATE() AS DATE));
+        SELECT DISTINCT
+            rc_data.OldRoom,
+            rc_data.NewRoom,
+            COALESCE(NULLIF(ISNULL(r.FirstName1, '') + ' ' + ISNULL(r.LastName1, ''), ' '), '') AS GuestName,
+            ISNULL(r.Voucher, '') AS Voucher,
+            rc_data.ChangeTime,
+            rc_data.Source
+        FROM (
+            -- 1. DailyDetail üzerinden gerçekleşmiş fiili Room Change
+            SELECT 
+                dd_old.Room AS OldRoom, 
+                dd_new.Room AS NewRoom,
+                dd_new.ReservationId,
+                CONVERT(VARCHAR(5), dd_new.UpdateDate, 108) AS ChangeTime,
+                'Fiili RC' AS Source
+            FROM DailyDetail dd_new
+            JOIN DailyDetail dd_old ON dd_new.ReservationId = dd_old.ReservationId 
+                 AND dd_old.StayDate = DATEADD(day, -1, dd_new.StayDate) 
+                 AND dd_old.Room <> dd_new.Room
+            WHERE CAST(dd_new.StayDate AS DATE) = @TargetDate
+              AND dd_new.ReservationId > 0
+              AND ISNULL(dd_old.Room, '') <> '' 
+              AND ISNULL(dd_new.Room, '') <> ''
+
+            UNION
+
+            -- 2. Sedna RoomChangePlan tablosu
+            SELECT 
+                rcp.OldRoom, 
+                rcp.NewRoom, 
+                rcp.ReservationId,
+                CONVERT(VARCHAR(5), rcp.[Time], 108) AS ChangeTime,
+                'Planlanan RC' AS Source
+            FROM RoomChangePlan rcp
+            WHERE (CAST(rcp.RCDate AS DATE) = @TargetDate OR CAST(rcp.RecordDate AS DATE) = @TargetDate)
+              AND ISNULL(rcp.Deleted, 0) = 0
+              AND ISNULL(rcp.OldRoom, '') <> '' 
+              AND ISNULL(rcp.NewRoom, '') <> ''
+        ) rc_data
+        LEFT JOIN Reservation r ON rc_data.ReservationId = r.RecId
+        ORDER BY rc_data.OldRoom
+    """, (target_date,))
+    cols = [c[0] for c in cursor.description]
+    return [dict(zip(cols, r)) for r in cursor.fetchall()]
+
+def get_late_checkouts(conn, target_date=None):
+    """Belirtilen tarihte (varsayılan bugün) tanımlı Late Check-out (Uzatma) listesini döndürür."""
+    cursor = conn.cursor()
+    cursor.execute("""
+        DECLARE @TargetDate DATE = COALESCE(?, CAST(GETDATE() AS DATE));
+        SELECT 
+            r.Room,
+            r.LateCOut AS UzatmaSaati,
+            COALESCE(NULLIF(ISNULL(r.FirstName1, '') + ' ' + ISNULL(r.LastName1, ''), ' '), '') AS GuestName,
+            ISNULL(r.Voucher, '') AS Voucher,
+            CONVERT(VARCHAR(10), r.CheckOutDate, 104) AS CheckOutDate,
+            r.Status,
+            CASE 
+                WHEN r.Status = 3 THEN 'Çıkış Yaptı'
+                WHEN r.Status = 2 THEN 'Odada'
+                ELSE 'Bekliyor'
+            END AS DurumText
+        FROM Reservation r
+        INNER JOIN Room rm ON r.Room = rm.Room AND rm.ForeCast = 1
+        WHERE CAST(r.CheckOutDate AS DATE) = @TargetDate
+          AND NULLIF(RTRIM(LTRIM(r.LateCOut)), '') IS NOT NULL
+          AND r.StatusCode IN (0,1,2,3)
+          AND r.Status IN (2, 3)
+          AND ISNULL(r.Voucher, '') NOT LIKE '%NOSHOW%'
+          AND ISNULL(r.Voucher, '') NOT LIKE '%NO-SHOW%'
+          AND ISNULL(r.ResRemark, '') NOT LIKE '%NOSHOW%'
+          AND ISNULL(r.ResRemark, '') NOT LIKE '%NO-SHOW%'
+        ORDER BY r.LateCOut ASC, r.Room ASC
+    """, (target_date,))
+    cols = [c[0] for c in cursor.description]
+    return [dict(zip(cols, r)) for r in cursor.fetchall()]
+
+

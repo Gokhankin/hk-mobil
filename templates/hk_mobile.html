@@ -1254,6 +1254,222 @@
             gap: 2px;
             border: 1px solid rgba(255,255,255,0.6);
         }
+
+        /* Room Change (RC) Hızlı Buton & Modal Stilleri */
+        .rc-btn {
+            background: rgba(2, 132, 199, 0.35);
+            border: 1.5px solid #38bdf8;
+            color: white;
+            padding: 0 8px;
+            height: 30px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
+        }
+        .rc-btn:active {
+            transform: scale(0.95);
+            background: #0284c7;
+        }
+        .rc-badge-count {
+            background: #38bdf8;
+            color: #082f49;
+            font-size: 0.65rem;
+            font-weight: 900;
+            padding: 1px 5px;
+            border-radius: 10px;
+            line-height: 1.1;
+        }
+
+        /* RC Modal Card & Liste */
+        .rc-modal-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+            background: rgba(0,0,0,0.05);
+            padding: 3px;
+            border-radius: 10px;
+        }
+        body.dark-mode .rc-modal-tabs {
+            background: rgba(255,255,255,0.05);
+        }
+        .rc-tab-btn {
+            flex: 1;
+            padding: 8px 4px;
+            border: none;
+            background: transparent;
+            color: var(--text-light);
+            font-weight: 700;
+            font-size: 0.78rem;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+        .rc-tab-btn.active {
+            background: var(--card);
+            color: #0284c7;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        body.dark-mode .rc-tab-btn.active {
+            color: #38bdf8;
+        }
+        .rc-date-selector-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .rc-date-pill {
+            padding: 4px 10px;
+            border-radius: 14px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            background: var(--border);
+            color: var(--text-main);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .rc-date-pill.active {
+            background: #0284c7;
+            color: white;
+        }
+        .rc-date-input {
+            padding: 4px 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--text-main);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+        }
+        .rc-list-card {
+            background: var(--card);
+            border: 1.5px solid #0284c7;
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        body.dark-mode .rc-list-card {
+            background: rgba(15, 23, 42, 0.7);
+            border-color: #38bdf8;
+        }
+        .rc-route-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            font-weight: 900;
+        }
+        .rc-room-box {
+            padding: 4px 10px;
+            border-radius: 8px;
+            letter-spacing: 0.3px;
+        }
+        .rc-room-old {
+            background: #ef4444;
+            color: white;
+        }
+        .rc-room-new {
+            background: #10b981;
+            color: white;
+        }
+        .rc-arrow {
+            color: #0284c7;
+            font-size: 1.1rem;
+        }
+        .rc-guest-info {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid var(--border);
+            padding-top: 4px;
+        }
+        /* Late Check-out List Card */
+        .late-list-card {
+            background: var(--card);
+            border: 1.5px solid #f59e0b;
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 5px rgba(245, 158, 11, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        body.dark-mode .late-list-card {
+            background: rgba(15, 23, 42, 0.7);
+            border-color: #f59e0b;
+        }
+        .late-card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .late-room-tag {
+            font-size: 1rem;
+            font-weight: 900;
+            color: #d97706;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        body.dark-mode .late-room-tag {
+            color: #fbbf24;
+        }
+        .late-time-pill {
+            background: #f59e0b;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .late-status-pill {
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .late-status-stay {
+            background: rgba(239, 68, 68, 0.15);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        body.dark-mode .late-status-stay {
+            color: #f87171;
+        }
+        .late-status-done {
+            background: rgba(16, 185, 129, 0.15);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        body.dark-mode .late-status-done {
+            color: #34d399;
+        }
     </style>
 </head>
 <body>
@@ -1322,6 +1538,47 @@
         </div>
     </div>
 
+    <!-- Room Change & Late Check-out Detay Modalı -->
+    <div id="rcModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:10001; align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(4px);">
+        <div class="modal-card" style="max-width:390px; width:100%;">
+            <div class="modal-header">
+                <div class="modal-room-title" id="rcModalTitle" style="color:#0284c7;"><i class="fas fa-exchange-alt"></i> Oda & Çıkış Hareketleri</div>
+                <button class="modal-close-btn" onclick="closeRcModal()"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <!-- Sekmeler (Tabs): Room Change vs Late Check-out -->
+            <div class="rc-modal-tabs">
+                <button class="rc-tab-btn active" id="tabRcChanges" onclick="switchRcModalTab('rc')">
+                    <i class="fas fa-exchange-alt"></i> Room Change (<span id="modalRcTabCount">0</span>)
+                </button>
+                <button class="rc-tab-btn" id="tabLateCheckouts" onclick="switchRcModalTab('late')">
+                    <i class="fas fa-user-clock"></i> Late C/Out (<span id="modalLateTabCount">0</span>)
+                </button>
+            </div>
+
+            <!-- Tarih Seçici Çubuğu: Bugün, Dün, Önceki Gün ve Takvim -->
+            <div class="rc-date-selector-row">
+                <button class="rc-date-pill active" id="datePillToday" onclick="selectRcDate('today')">Bugün</button>
+                <button class="rc-date-pill" id="datePillYesterday" onclick="selectRcDate('yesterday')">Dün</button>
+                <button class="rc-date-pill" id="datePillPrev" onclick="selectRcDate('prev')">Önceki Gün</button>
+                <input type="date" id="rcDatePickerInput" class="rc-date-input" onchange="onRcDateInputChange(this.value)" title="Farklı Bir Tarih Seç">
+            </div>
+
+            <div id="rcModalSubtitle" style="font-size:0.75rem; color:var(--text-light); margin-bottom:8px; font-weight:600;">
+                <span id="rcModalDateLabel">Bugün</span> kayıtlı hareketler:
+            </div>
+
+            <!-- Dinamik Liste Alanı -->
+            <div id="rcListContainer" style="display:flex; flex-direction:column; gap:8px; max-height:55vh; overflow-y:auto; padding-right:2px;">
+                <!-- JS ile doldurulur -->
+            </div>
+
+            <div class="modal-actions" style="margin-top:12px;">
+                <button class="modal-cancel-btn" style="background:#0284c7; color:white;" onclick="closeRcModal()">Kapat</button>
+            </div>
+        </div>
+    </div>
+
     <header class="header">
         <!-- SATIR 1: Başlık ve Kullanıcı Kontrolleri -->
         <div class="header-top">
@@ -1333,6 +1590,10 @@
                     <div id="connDot" class="conn-dot"></div>
                     <span id="connLabel">OFF</span>
                 </div>
+                <!-- Room Change Küçük Buton / Sayaç Kutucuğu -->
+                <button class="rc-btn" id="headerRcBtn" onclick="openRcModal()" title="Oda Değişikliği (Room Change) Listesini Göster" style="display:none;">
+                    <i class="fas fa-exchange-alt"></i> RC <span class="rc-badge-count" id="rcBadgeCount">0</span>
+                </button>
                 <button class="refresh-btn" id="densityBtn" onclick="toggleDensity()" title="Oda Görünümünü Küçült / Büyüt (Geniş / Kompakt)"><i id="densityIcon" class="fas fa-compress-alt"></i></button>
                 <button class="refresh-btn" onclick="toggleTheme()" title="Karanlık/Aydınlık Mod"><i id="themeIcon" class="fas fa-moon"></i></button>
                 <button class="refresh-btn" onclick="logout()" title="Çıkış Yap"><i class="fas fa-sign-out-alt"></i></button>
@@ -1413,6 +1674,208 @@
 
         let liveSyncTimer = null;
         let isCompactDensity = localStorage.getItem('hk_grid_density') === 'compact';
+        let currentRoomChanges = [];
+        let currentLateCheckouts = [];
+        let rcActiveTab = 'rc'; // 'rc' veya 'late'
+        let rcSelectedDate = null; // YYYY-MM-DD (null ise bugün)
+
+        function getLocalDateString(offsetDays = 0) {
+            const d = new Date();
+            d.setDate(d.getDate() + offsetDays);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        /* --- ROOM CHANGE & LATE CHECK-OUT MODAL KONTROLLERİ --- */
+        async function openRcModal() {
+            const modal = document.getElementById('rcModal');
+            if (!modal) return;
+
+            // Varsayılan olarak bugünü seç
+            rcSelectedDate = getLocalDateString(0);
+            updateRcDatePillsUI('today');
+            
+            const dateInput = document.getElementById('rcDatePickerInput');
+            if (dateInput) dateInput.value = rcSelectedDate;
+
+            modal.style.display = 'flex';
+            await loadRcModalData(rcSelectedDate);
+        }
+
+        function closeRcModal() {
+            const modal = document.getElementById('rcModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function switchRcModalTab(tab) {
+            rcActiveTab = tab;
+            const tabRc = document.getElementById('tabRcChanges');
+            const tabLate = document.getElementById('tabLateCheckouts');
+            if (tabRc) tabRc.classList.toggle('active', tab === 'rc');
+            if (tabLate) tabLate.classList.toggle('active', tab === 'late');
+            renderRcModalList();
+        }
+
+        function updateRcDatePillsUI(activePill) {
+            ['today', 'yesterday', 'prev'].forEach(p => {
+                const el = document.getElementById('datePill' + p.charAt(0).toUpperCase() + p.slice(1));
+                if (el) el.classList.toggle('active', p === activePill);
+            });
+        }
+
+        async function selectRcDate(type) {
+            let offset = 0;
+            if (type === 'today') offset = 0;
+            else if (type === 'yesterday') offset = -1;
+            else if (type === 'prev') offset = -2;
+
+            rcSelectedDate = getLocalDateString(offset);
+            updateRcDatePillsUI(type);
+
+            const dateInput = document.getElementById('rcDatePickerInput');
+            if (dateInput) dateInput.value = rcSelectedDate;
+
+            await loadRcModalData(rcSelectedDate);
+        }
+
+        async function onRcDateInputChange(val) {
+            if (!val) return;
+            rcSelectedDate = val;
+            
+            // Eğer pill tarihlerinden biriyse pill'i yak
+            const todayStr = getLocalDateString(0);
+            const yesterdayStr = getLocalDateString(-1);
+            const prevStr = getLocalDateString(-2);
+
+            if (val === todayStr) updateRcDatePillsUI('today');
+            else if (val === yesterdayStr) updateRcDatePillsUI('yesterday');
+            else if (val === prevStr) updateRcDatePillsUI('prev');
+            else updateRcDatePillsUI('');
+
+            await loadRcModalData(rcSelectedDate);
+        }
+
+        async function loadRcModalData(dateStr) {
+            const container = document.getElementById('rcListContainer');
+            const labelEl = document.getElementById('rcModalDateLabel');
+            if (container) {
+                container.innerHTML = '<div style="text-align:center; padding:25px; color:var(--text-light); font-weight:600;"><i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:8px;"></i><br>Yükleniyor...</div>';
+            }
+
+            // Etiket formatla
+            const todayStr = getLocalDateString(0);
+            const yestStr = getLocalDateString(-1);
+            const prevStr = getLocalDateString(-2);
+
+            if (labelEl) {
+                if (dateStr === todayStr) labelEl.innerText = "Bugün (" + formatDateDisplay(dateStr) + ")";
+                else if (dateStr === yestStr) labelEl.innerText = "Dün (" + formatDateDisplay(dateStr) + ")";
+                else if (dateStr === prevStr) labelEl.innerText = "Önceki Gün (" + formatDateDisplay(dateStr) + ")";
+                else labelEl.innerText = formatDateDisplay(dateStr);
+            }
+
+            try {
+                const res = await fetch(`/api/hk/rc_history?date=${dateStr}`);
+                const data = await res.json();
+                if (data.success) {
+                    currentRoomChanges = data.room_changes || [];
+                    currentLateCheckouts = data.late_checkouts || [];
+                    
+                    const tabRcCount = document.getElementById('modalRcTabCount');
+                    const tabLateCount = document.getElementById('modalLateTabCount');
+                    if (tabRcCount) tabRcCount.innerText = currentRoomChanges.length;
+                    if (tabLateCount) tabLateCount.innerText = currentLateCheckouts.length;
+
+                    renderRcModalList();
+                } else {
+                    if (container) container.innerHTML = `<div style="text-align:center; padding:20px; color:#ef4444;">Hata: ${data.error}</div>`;
+                }
+            } catch (e) {
+                if (container) container.innerHTML = `<div style="text-align:center; padding:20px; color:#ef4444;">Bağlantı hatası: ${e.message}</div>`;
+            }
+        }
+
+        function formatDateDisplay(yyyy_mm_dd) {
+            if (!yyyy_mm_dd) return '';
+            const p = yyyy_mm_dd.split('-');
+            if (p.length === 3) return `${p[2]}.${p[1]}.${p[0]}`;
+            return yyyy_mm_dd;
+        }
+
+        function renderRcModalList() {
+            const container = document.getElementById('rcListContainer');
+            if (!container) return;
+
+            if (rcActiveTab === 'rc') {
+                // Room Changes List
+                if (!currentRoomChanges || currentRoomChanges.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; padding:25px; color:var(--text-light); font-weight:600;"><i class="fas fa-info-circle fa-2x" style="margin-bottom:8px; opacity:0.6;"></i><br>Seçili tarihte kayıtlı Room Change bulunamadı.</div>';
+                    return;
+                }
+
+                let html = '';
+                currentRoomChanges.forEach(rc => {
+                    let oldR = rc.OldRoom || '-';
+                    let newR = rc.NewRoom || '-';
+                    let gName = rc.GuestName || 'Misafir Belirtilmemiş';
+                    let vCode = rc.Voucher ? ` (${rc.Voucher})` : '';
+                    let cTime = rc.ChangeTime ? `<span style="font-size:0.75rem; color:#64748b;"><i class="fas fa-clock"></i> ${rc.ChangeTime}</span>` : '';
+                    let src = rc.Source || '';
+
+                    html += `
+                    <div class="rc-list-card">
+                        <div class="rc-route-row">
+                            <span class="rc-room-box rc-room-old"><i class="fas fa-sign-out-alt"></i> ${oldR} (Eski)</span>
+                            <i class="fas fa-arrow-right rc-arrow"></i>
+                            <span class="rc-room-box rc-room-new"><i class="fas fa-sign-in-alt"></i> ${newR} (Yeni)</span>
+                        </div>
+                        <div class="rc-guest-info">
+                            <span><i class="fas fa-user"></i> <b>${gName}</b>${vCode}</span>
+                            ${cTime}
+                        </div>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            } else {
+                // Late Check-outs List
+                if (!currentLateCheckouts || currentLateCheckouts.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; padding:25px; color:var(--text-light); font-weight:600;"><i class="fas fa-info-circle fa-2x" style="margin-bottom:8px; opacity:0.6;"></i><br>Seçili tarihte kayıtlı Late Check-out bulunamadı.</div>';
+                    return;
+                }
+
+                let html = '';
+                currentLateCheckouts.forEach(lc => {
+                    let rNo = lc.Room || '-';
+                    let uTime = lc.UzatmaSaati || '-';
+                    let gName = lc.GuestName || 'Misafir Belirtilmemiş';
+                    let vCode = lc.Voucher ? ` (${lc.Voucher})` : '';
+                    let dText = lc.DurumText || '';
+                    let isStay = lc.Status === 2;
+                    let stClass = isStay ? 'late-status-stay' : 'late-status-done';
+                    let stIcon = isStay ? 'fa-user' : 'fa-check';
+
+                    html += `
+                    <div class="late-list-card">
+                        <div class="late-card-top">
+                            <div class="late-room-tag">
+                                <i class="fas fa-door-open"></i> Oda ${rNo}
+                            </div>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span class="late-status-pill ${stClass}"><i class="fas ${stIcon}"></i> ${dText}</span>
+                                <span class="late-time-pill"><i class="fas fa-clock"></i> ${uTime}</span>
+                            </div>
+                        </div>
+                        <div class="rc-guest-info">
+                            <span><i class="fas fa-user"></i> <b>${gName}</b>${vCode}</span>
+                            <span style="font-size:0.72rem; color:var(--text-light);">${lc.CheckOutDate || ''}</span>
+                        </div>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             initTheme();
@@ -1703,6 +2166,20 @@
                 }
 
                 currentData = data.items;
+                currentRoomChanges = data.room_changes || [];
+                currentLateCheckouts = data.late_checkouts || [];
+
+                // Room Change / Late Checkout Header Butonu & Sayacı Güncelle
+                const rcBtn = document.getElementById('headerRcBtn');
+                const rcCountEl = document.getElementById('rcBadgeCount');
+                if (rcBtn && rcCountEl) {
+                    const totalMovements = currentRoomChanges.length;
+                    rcCountEl.innerText = totalMovements;
+                    // Eğer RC veya Late Checkout varsa butonu göster
+                    const hasItems = currentRoomChanges.length > 0 || currentLateCheckouts.length > 0;
+                    rcBtn.style.display = hasItems ? 'inline-flex' : 'none';
+                }
+
                 applyCurrentFilter();
 
                 // Arama kutusunda değer varsa filtresini tekrar uygula
@@ -2066,8 +2543,12 @@
                 if(uzatmaTimeVal) badges += `<div class="badge-uzatma" title="Uzatma Saati: ${uzatmaTimeVal}"><i class="fas fa-clock"></i> ${uzatmaTimeVal}</div>`;
                 badges += '</div>';
 
+                let isRoomChange = (item['IS_ROOM_CHANGE'] || 0) === 1;
+
                 let coBadgeHtml = '';
-                if (isDeparture && coDurumVal) {
+                if (isRoomChange && !isOccupied) {
+                    coBadgeHtml = `<div class="co-card-badge" style="background:#0284c7; color:#fff;" title="Oda Değişikliği (Room Change)"><i class="fas fa-exchange-alt"></i> ROOM CHANGE</div>`;
+                } else if (isDeparture && coDurumVal) {
                     if (coDurumVal.includes('CO_YAPILDI') || coDurumVal.includes('ÇIKIŞ')) {
                         coBadgeHtml = `<div class="co-card-badge co-card-done"><i class="fas fa-check"></i> C/O YAPILDI</div>`;
                     } else if (coDurumVal.includes('ODADA_HALA') || coDurumVal.includes('ODADA')) {
