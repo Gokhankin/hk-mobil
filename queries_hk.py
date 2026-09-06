@@ -144,7 +144,7 @@ def get_hk_status(conn) -> pd.DataFrame:
                 ELSE 0 
             END AS [BUGUN_GIDECEK],
             CASE 
-                WHEN (arr.HasArrival = 1 AND dep.OdadaHala = 1) OR dd.[Status] = 3 THEN 1
+                WHEN arr.HasArrival = 1 AND (dep.OdadaHala = 1 OR dep.CikisYapildi = 1) THEN 1
                 ELSE 0
             END AS [IS_CO_CI],
             CASE 
@@ -328,11 +328,9 @@ def get_guest_stats(conn):
         DECLARE @Today DATE = CAST(GETDATE() AS DATE);
         SELECT COUNT(DISTINCT rm.Room)
         FROM Room rm
-        LEFT JOIN DailyDetail dd ON rm.Room = dd.Room AND CAST(dd.StayDate AS DATE) = @Today
         WHERE rm.ForeCast = 1 AND (
-            (EXISTS (SELECT 1 FROM Reservation a WHERE a.Room = rm.Room AND a.Status = 1 AND CAST(a.CheckinDate AS DATE) = @Today AND a.StatusCode IN (0,1,2,3))
-             AND EXISTS (SELECT 1 FROM Reservation d WHERE d.Room = rm.Room AND d.Status = 2 AND CAST(d.CheckOutDate AS DATE) = @Today AND d.StatusCode IN (0,1,2,3)))
-            OR dd.[Status] = 3
+            EXISTS (SELECT 1 FROM Reservation a WHERE (a.Room = rm.Room OR a.RoomNummer = rm.RecId) AND a.Status = 1 AND CAST(a.CheckinDate AS DATE) = @Today AND a.StatusCode IN (0,1,2,3) AND ISNULL(a.Voucher, '') NOT LIKE '%NOSHOW%' AND ISNULL(a.ResRemark, '') NOT LIKE '%NOSHOW%')
+            AND EXISTS (SELECT 1 FROM Reservation d WHERE (d.Room = rm.Room OR d.RoomNummer = rm.RecId) AND d.Status IN (2,3) AND CAST(d.CheckOutDate AS DATE) = @Today AND d.StatusCode IN (0,1,2,3) AND ISNULL(d.Voucher, '') NOT LIKE '%NOSHOW%' AND ISNULL(d.ResRemark, '') NOT LIKE '%NOSHOW%')
         )
     """)
     coci_cnt = cursor.fetchone()[0] or 0
