@@ -332,8 +332,18 @@ def get_guest_stats(conn):
         LEFT JOIN DailyDetail dd ON rm.Room = dd.Room AND CAST(dd.StayDate AS DATE) = @Today
         WHERE rm.ForeCast = 1 
           AND ISNULL(dd.[Status], 0) NOT IN (3, 4)
-          AND EXISTS (SELECT 1 FROM Reservation a WHERE (a.Room = rm.Room OR a.RoomNummer = rm.RecId) AND a.Status = 1 AND CAST(a.CheckinDate AS DATE) = @Today AND a.StatusCode IN (0,1,2,3) AND ISNULL(a.Voucher, '') NOT LIKE '%NOSHOW%' AND ISNULL(a.ResRemark, '') NOT LIKE '%NOSHOW%')
-          AND EXISTS (SELECT 1 FROM Reservation d WHERE (d.Room = rm.Room OR d.RoomNummer = rm.RecId) AND d.Status IN (2, 3) AND CAST(d.CheckOutDate AS DATE) = @Today AND d.StatusCode IN (0,1,2,3) AND ISNULL(d.Voucher, '') NOT LIKE '%NOSHOW%' AND ISNULL(d.ResRemark, '') NOT LIKE '%NOSHOW%')
+          AND EXISTS (
+              SELECT 1 FROM Reservation a 
+              WHERE COALESCE(NULLIF(a.Room, ''), (SELECT rm_ref.Room FROM Room rm_ref WHERE a.RoomNummer = rm_ref.RecId)) = rm.Room 
+                AND a.Status = 1 AND CAST(a.CheckinDate AS DATE) = @Today AND a.StatusCode IN (0,1,2,3) 
+                AND ISNULL(a.Voucher, '') NOT LIKE '%NOSHOW%' AND ISNULL(a.ResRemark, '') NOT LIKE '%NOSHOW%'
+          )
+          AND EXISTS (
+              SELECT 1 FROM Reservation d 
+              WHERE COALESCE(NULLIF(d.Room, ''), (SELECT rm_ref.Room FROM Room rm_ref WHERE d.RoomNummer = rm_ref.RecId)) = rm.Room 
+                AND d.Status IN (2, 3) AND CAST(d.CheckOutDate AS DATE) = @Today AND d.StatusCode IN (0,1,2,3) 
+                AND ISNULL(d.Voucher, '') NOT LIKE '%NOSHOW%' AND ISNULL(d.ResRemark, '') NOT LIKE '%NOSHOW%'
+          )
     """)
     coci_cnt = cursor.fetchone()[0] or 0
 
