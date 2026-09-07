@@ -633,8 +633,7 @@
             cursor: pointer;
             position: relative;
             overflow: hidden;
-            animation: fadeIn 0.3s ease forwards;
-            opacity: 0;
+            opacity: 1;
             width: 100%;
             min-width: 0;
             box-sizing: border-box;
@@ -1678,6 +1677,7 @@
         let currentLateCheckouts = [];
         let rcActiveTab = 'rc'; // 'rc' veya 'late'
         let rcSelectedDate = null; // YYYY-MM-DD (null ise bugün)
+        let lastDataSnapshot = ''; // Değişiklik yoksa gereksiz DOM re-render ve titremeyi engellemek için
 
         function getLocalDateString(offsetDays = 0) {
             const d = new Date();
@@ -1980,13 +1980,13 @@
 
         function startLiveSync() {
             if (liveSyncTimer) clearInterval(liveSyncTimer);
-            // Sedna ile 15 saniyede bir sessiz arka plan senkronizasyonu
+            // Sedna ile 30 saniyede bir sessiz arka plan senkronizasyonu
             liveSyncTimer = setInterval(() => {
                 const isAuth = sessionStorage.getItem('hk_auth') === 'true';
                 if (isAuth && !activeModalRoom) {
                     loadData(true);
                 }
-            }, 15000);
+            }, 30000);
         }
 
         function stopLiveSync() {
@@ -2165,6 +2165,11 @@
                     }
                 }
 
+                // Değişiklik kontrolü: Veri değişmediyse DOM'u yeniden çizme (titremeyi %100 yok eder)
+                const newSnapshot = JSON.stringify(data.items);
+                const hasChanged = (newSnapshot !== lastDataSnapshot);
+                lastDataSnapshot = newSnapshot;
+
                 currentData = data.items;
                 currentRoomChanges = data.room_changes || [];
                 currentLateCheckouts = data.late_checkouts || [];
@@ -2180,12 +2185,15 @@
                     rcBtn.style.display = hasItems ? 'inline-flex' : 'none';
                 }
 
-                applyCurrentFilter();
+                // Sadece veri değişmişse veya ilk yükleme ise DOM'u yeniden çiz
+                if (hasChanged || !isSilent) {
+                    applyCurrentFilter();
 
-                // Arama kutusunda değer varsa filtresini tekrar uygula
-                const searchVal = document.getElementById('searchRoomInput').value.trim();
-                if (searchVal) {
-                    executeRoomSearch();
+                    // Arama kutusunda değer varsa filtresini tekrar uygula
+                    const searchVal = document.getElementById('searchRoomInput').value.trim();
+                    if (searchVal) {
+                        executeRoomSearch();
+                    }
                 }
             } catch (err) {
                 if (!isSilent) {
@@ -2564,7 +2572,7 @@
                 }
 
                 html += `
-                <div class="room-card" id="room-card-${roomNo}" style="background: ${bgColor}; color: ${textColor}; border: ${borderStyle}; animation-delay: ${delay}s" 
+                <div class="room-card" id="room-card-${roomNo}" style="background: ${bgColor}; color: ${textColor}; border: ${borderStyle};" 
                      onclick="openStatusModal('${roomNo}')">
                     ${remarkHtml}
                     ${remarkDot}
