@@ -144,7 +144,7 @@ def get_hk_status(conn) -> pd.DataFrame:
                 ELSE 0 
             END AS [BUGUN_GIDECEK],
             CASE 
-                WHEN (arr.HasArrival = 1 AND dep.OdadaHala = 1) OR ISNULL(dd.[Status], 0) = 3 THEN 1
+                WHEN arr.HasArrival = 1 AND (dep.OdadaHala = 1 OR dep.CikisYapildi = 1) THEN 1
                 ELSE 0
             END AS [IS_CO_CI],
             CASE 
@@ -173,8 +173,8 @@ def get_hk_status(conn) -> pd.DataFrame:
             dd.StatusRemark AS [STATUS_REMARK],
             ISNULL(dd.[Status], 0) AS [DD_STATUS],
             CASE 
-                WHEN dd.[Status] = 4 THEN 'ARIZALI (OOO)'
-                WHEN dd.[Status] = 3 THEN 'BLOKELI'
+                WHEN ISNULL(dd.[Status], 0) IN (3, 4) THEN 'ARIZALI (OOO)'
+                WHEN dd.[Status] = 2 THEN 'BLOKELI'
                 WHEN rm.HkStatus = 4 THEN 'ARIZALI (OOO)'
                 WHEN rm.HkStatus = 5 THEN 'BLOKELI'
                 WHEN rm.HkStatus = 3 THEN 'OK'
@@ -182,6 +182,7 @@ def get_hk_status(conn) -> pd.DataFrame:
                 WHEN rm.DirtyClean = 0 OR rm.HkStatus = 2 THEN 'TEMIZ'
                 ELSE 'KIRLI'
             END AS [DURUM],
+            ISNULL(rm.DirtyClean, 1) AS [RM_DIRTY_CLEAN],
             CASE 
                 WHEN rm.HkStatus = 3 AND ISNULL(dd.[Status], 0) NOT IN (3, 4) THEN 'EVET'
                 ELSE 'HAZIR_MI'
@@ -323,19 +324,16 @@ def get_guest_stats(conn):
     """)
     r = cursor.fetchone()
     
-    # C/Out - C/In ve Tahsisli Pembe oda sayısı (Sedna Ön Büro ile tam uyumlu)
+    # C/Out - C/In oda sayısı (Aynı gün hem çıkış hem giriş olan turnaround odalar)
     cursor.execute("""
         DECLARE @Today DATE = CAST(GETDATE() AS DATE);
         SELECT COUNT(DISTINCT rm.Room)
         FROM Room rm
         LEFT JOIN DailyDetail dd ON rm.Room = dd.Room AND CAST(dd.StayDate AS DATE) = @Today
-        WHERE rm.ForeCast = 1 AND (
-            ISNULL(dd.[Status], 0) = 3
-            OR (
-                EXISTS (SELECT 1 FROM Reservation a WHERE (a.Room = rm.Room OR a.RoomNummer = rm.RecId) AND a.Status = 1 AND CAST(a.CheckinDate AS DATE) = @Today AND a.StatusCode IN (0,1,2,3) AND ISNULL(a.Voucher, '') NOT LIKE '%NOSHOW%' AND ISNULL(a.ResRemark, '') NOT LIKE '%NOSHOW%')
-                AND EXISTS (SELECT 1 FROM Reservation d WHERE (d.Room = rm.Room OR d.RoomNummer = rm.RecId) AND d.Status = 2 AND CAST(d.CheckOutDate AS DATE) = @Today AND d.StatusCode IN (0,1,2,3) AND ISNULL(d.Voucher, '') NOT LIKE '%NOSHOW%' AND ISNULL(d.ResRemark, '') NOT LIKE '%NOSHOW%')
-            )
-        )
+        WHERE rm.ForeCast = 1 
+          AND ISNULL(dd.[Status], 0) NOT IN (3, 4)
+          AND EXISTS (SELECT 1 FROM Reservation a WHERE (a.Room = rm.Room OR a.RoomNummer = rm.RecId) AND a.Status = 1 AND CAST(a.CheckinDate AS DATE) = @Today AND a.StatusCode IN (0,1,2,3) AND ISNULL(a.Voucher, '') NOT LIKE '%NOSHOW%' AND ISNULL(a.ResRemark, '') NOT LIKE '%NOSHOW%')
+          AND EXISTS (SELECT 1 FROM Reservation d WHERE (d.Room = rm.Room OR d.RoomNummer = rm.RecId) AND d.Status IN (2, 3) AND CAST(d.CheckOutDate AS DATE) = @Today AND d.StatusCode IN (0,1,2,3) AND ISNULL(d.Voucher, '') NOT LIKE '%NOSHOW%' AND ISNULL(d.ResRemark, '') NOT LIKE '%NOSHOW%')
     """)
     coci_cnt = cursor.fetchone()[0] or 0
 

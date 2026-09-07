@@ -432,9 +432,9 @@
             color: #ffffff !important;
         }
         .sum-coci {
-            background: #f472b6 !important;
-            border: 1.5px solid #ec4899 !important;
-            color: #831843 !important;
+            background: #c084fc !important;
+            border: 1.5px solid #a855f7 !important;
+            color: #ffffff !important;
         }
         .sum-kirli {
             background: #9ca3af !important;
@@ -448,8 +448,8 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         }
         .sum-ooo {
-            background: #c084fc !important;
-            border: 1.5px solid #a855f7 !important;
+            background: #f08080 !important;
+            border: 1.5px solid #e06666 !important;
             color: #ffffff !important;
         }
         .sum-bos-kirli {
@@ -794,9 +794,9 @@
             border: 1px solid #dc2626;
         }
         .clean-ind-ooo {
-            background: #a855f7;
+            background: #f08080;
             color: #ffffff;
-            border: 1px solid #9333ea;
+            border: 1px solid #e06666;
         }
 
         /* Connection Status and Maid Selector */
@@ -2327,15 +2327,15 @@
                 let isDep = (item['BUGUN_GIDECEK'] || 0) > 0;
                 let coDurum = item['CO_DURUM'] || '';
                 let isDepHala = isDep && (coDurum.includes('ODADA_HALA') || coDurum.includes('ODADA'));
-                let isCoCi = (item['IS_CO_CI'] || 0) === 1 || (isArr && isDep && isDepHala);
+                let isCoCi = (item['IS_CO_CI'] || 0) === 1 || (isArr && isDep);
                 let isInh = (item['DOLU_BOS'] || 0) > 0 && !isDepHala;
                 let isBK = (item['BOS_KIRLI'] || 0) === 1;
 
                 if (activeFilter === 'KİRLİ' || activeFilter === 'KIRLI') return isKirli(st);
                 if (activeFilter === 'TEMİZ' || activeFilter === 'TEMIZ') return isTemiz(st) || isOK(st);
-                if (activeFilter === 'OOO') return isOOO(st) || (item['DD_STATUS'] === 4);
+                if (activeFilter === 'OOO') return isOOO(st) || (item['DD_STATUS'] === 3 && !item['DOLU_BOS']) || (item['DD_STATUS'] === 4) || (item['HK_STATUS'] === 4);
                 if (activeFilter === 'BLOKELİ' || activeFilter === 'BLOKELI') return isBlokeli(st) || (item['DD_STATUS'] === 2);
-                if (activeFilter === 'GELEN') return isArr && !isCoCi;
+                if (activeFilter === 'GELEN') return isArr;
                 if (activeFilter === 'GIDECEK') return isDepHala;
                 if (activeFilter === 'INHOUSE') return isInh;
                 if (activeFilter === 'COCI') return isCoCi;
@@ -2403,10 +2403,11 @@
             currentData.forEach(item => {
                 let st = item['DURUM'] || '';
                 let isBK = (item['BOS_KIRLI'] || 0) === 1;
+                let isOoo = isOOO(st) || (item['DD_STATUS'] === 3 && !item['DOLU_BOS']) || (item['DD_STATUS'] === 4) || (item['HK_STATUS'] === 4);
                 if (isBK) cBosKirli++;
-                if (isKirli(st)) cDirty++;
+                if (isOoo) cOOO++;
+                else if (isKirli(st)) cDirty++;
                 else if (isTemiz(st) || isOK(st)) cClean++;
-                else if (isOOO(st) || (item['DD_STATUS'] === 4)) cOOO++;
             });
 
             if (items.length === 0) {
@@ -2436,12 +2437,12 @@
                 if(roomRemark) combinedRemark += `<div><span class="remark-title">Oda Notu:</span>${roomRemark}</div>`;
                 if(statusRemark) combinedRemark += `${combinedRemark ? '<hr style="margin:6px 0; opacity:0.2">' : ''}<div><span class="remark-title">Durum Notu:</span>${statusRemark}</div>`;
 
-                let isOooRoom = isOOO(statusStr) || (item['DD_STATUS'] === 4);
+                let isOooRoom = isOOO(statusStr) || (item['DD_STATUS'] === 3 && !item['DOLU_BOS']) || (item['DD_STATUS'] === 4) || (item['HK_STATUS'] === 4);
                 let isVadRoom = (item['DD_STATUS'] === 2);
                 let isDepartureRoom = isDeparture && (coDurumVal.includes('ODADA_HALA') || coDurumVal.includes('ODADA'));
-                let isCoCiRoom = (item['IS_CO_CI'] === 1) || (isArrival && isDeparture && isDepartureRoom);
+                let isCoCiRoom = !isOooRoom && ((item['IS_CO_CI'] === 1) || (isArrival && isDeparture));
                 let isInhouseRoom = isOccupied && !isDepartureRoom;
-                let isArrivalRoom = isArrival && !isDepartureRoom && !isCoCiRoom;
+                let isArrivalRoom = isArrival && !isDepartureRoom;
                 let isCleanRoom = isTemiz(statusStr) || isOK(statusStr);
                 let isDirtyRoom = isKirli(statusStr);
                 let isBosKirli = (item['BOS_KIRLI'] || 0) === 1;
@@ -2457,12 +2458,14 @@
                     let cleanText = isCleanRoom ? 'TEMİZ' : (isOooRoom ? 'ARIZALI' : 'KİRLİ');
                     if (isOK(statusStr)) cleanText = 'HAZIR';
 
+                    let oooCleanText = (item['RM_DIRTY_CLEAN'] === 0) ? 'TEMİZ' : 'KİRLİ';
                     if (isOooRoom) {
-                        bgColor = '#c084fc'; // Sedna Lila (Out of Order)
+                        bgColor = '#f08080'; // Sedna Lightcoral (Out of Order)
                         textColor = '#ffffff';
+                        borderStyle = '1.5px solid #e06666';
                         statusBg = 'rgba(0,0,0,0.25)';
                         statusColor = '#ffffff';
-                        currentLabel = 'ARIZALI';
+                        currentLabel = `OOO • ${oooCleanText}`;
                     } else if (isVadRoom) {
                         bgColor = '#a16207'; // Sedna Kahverengi / V.A.D
                         textColor = '#ffffff';
@@ -2470,12 +2473,19 @@
                         statusBg = 'rgba(0,0,0,0.25)';
                         statusColor = '#ffffff';
                         currentLabel = `V.A.D • ${cleanText}`;
-                    } else if (isCoCiRoom) {
-                        bgColor = '#f472b6'; // Sedna Pembe (Tahsisli & C/O-C/I)
-                        textColor = '#831843';
-                        borderStyle = '1.5px solid #ec4899';
+                    } else if (isArrivalRoom) {
+                        bgColor = '#facc15'; // Sedna Sarısı (Arrival / Gelen)
+                        textColor = '#713f12';
+                        borderStyle = '1.5px solid #eab308';
                         statusBg = 'rgba(255,255,255,0.45)';
-                        statusColor = '#831843';
+                        statusColor = '#713f12';
+                        currentLabel = isCoCiRoom ? `C/O-C/I • ${cleanText}` : `GELEN • ${cleanText}`;
+                    } else if (isCoCiRoom) {
+                        bgColor = '#c084fc'; // Sedna Mor / Lila (C/O-C/I)
+                        textColor = '#ffffff';
+                        borderStyle = '1.5px solid #a855f7';
+                        statusBg = 'rgba(0,0,0,0.25)';
+                        statusColor = '#ffffff';
                         currentLabel = `C/O-C/I • ${cleanText}`;
                     } else if (isDepartureRoom) {
                         bgColor = '#ef4444'; // Sedna Kırmızı (Departure / Çıkacaklar)
@@ -2490,13 +2500,6 @@
                         statusBg = 'rgba(0,0,0,0.22)';
                         statusColor = '#ffffff';
                         currentLabel = `INHOUSE • ${cleanText}`;
-                    } else if (isArrivalRoom) {
-                        bgColor = '#facc15'; // Sedna Sarısı (Arrival / Gelen)
-                        textColor = '#713f12';
-                        borderStyle = '1.5px solid #eab308';
-                        statusBg = 'rgba(255,255,255,0.45)';
-                        statusColor = '#713f12';
-                        currentLabel = `GELEN • ${cleanText}`;
                     } else if (isBlokeli(statusStr)) {
                         bgColor = '#6366f1'; // Sedna Blokeli (İndigo)
                         textColor = '#ffffff';
@@ -2542,7 +2545,7 @@
                 let cleanDotHtml = `<div class="clean-indicator ${cleanClass} ${remarkDot ? 'has-remark' : ''}" title="${cleanTitle}">${cleanIcon}</div>`;
 
                 // Badges
-                let isLightBg = ['#ffffff', '#facc15', '#f472b6'].includes(bgColor);
+                let isLightBg = ['#ffffff', '#facc15', '#f472b6', '#dda0dd'].includes(bgColor);
                 let occColor = isOccupied ? (isLightBg ? '#15803d' : '#4ade80') : (isLightBg ? '#64748b' : 'rgba(255,255,255,0.7)');
                 let badges = '<div class="room-badges">';
                 badges += `<i class="fas fa-user badge-icon" style="color: ${occColor}" title="${isOccupied ? 'Dolu Oda' : 'Boş Oda'}"></i>`;
@@ -2554,7 +2557,12 @@
                 let isRoomChange = (item['IS_ROOM_CHANGE'] || 0) === 1;
 
                 let coBadgeHtml = '';
-                if (isRoomChange && !isOccupied) {
+                if (isOooRoom) {
+                    coBadgeHtml = '';
+                } else if (isCoCiRoom) {
+                    let coText = (coDurumVal.includes('ODADA_HALA') || coDurumVal.includes('ODADA')) ? 'ODADA HÂLÂ' : 'C/O YAPILDI';
+                    coBadgeHtml = `<div class="co-card-badge" style="background:#c084fc; color:#fff;" title="Turnaround: Aynı Gün Çıkış & Giriş"><i class="fas fa-exchange-alt"></i> C/O-C/I (${coText})</div>`;
+                } else if (isRoomChange && !isOccupied) {
                     coBadgeHtml = `<div class="co-card-badge" style="background:#0284c7; color:#fff;" title="Oda Değişikliği (Room Change)"><i class="fas fa-exchange-alt"></i> ROOM CHANGE</div>`;
                 } else if (isDeparture && coDurumVal) {
                     if (coDurumVal.includes('CO_YAPILDI') || coDurumVal.includes('ÇIKIŞ')) {
