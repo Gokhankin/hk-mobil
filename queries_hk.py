@@ -129,7 +129,6 @@ def get_hk_status(conn) -> pd.DataFrame:
                   AND ISNULL(dd_old.Room, '') <> '' 
                   AND ISNULL(dd_new.Room, '') <> ''
             ) rc_all
-        ),
         )
         SELECT 
             rm.Room AS [ODA],
