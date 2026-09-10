@@ -88,27 +88,12 @@ def get_hk_status(conn) -> pd.DataFrame:
         TodayRC AS (
             SELECT DISTINCT Room
             FROM (
-                -- 1. LOG tablosu üzerinden gerçekleşen Oda Değişiklikleri
-                SELECT l.Old AS Room FROM LOG l
-                INNER JOIN Reservation r ON l.ResId = r.RecId
-                WHERE l.FieldName = 'Room' AND l.Old != l.New
-                  AND l.Old NOT IN ('Basic Blocking', 'Cancel Blocking', '')
-                  AND l.New NOT IN ('Basic Blocking', 'Cancel Blocking', '')
-                  AND CAST(l.ADateTime AS DATE) = @Today AND CAST(r.CheckOutDate AS DATE) = @Today
+                -- 1. Sedna Resmi RC Plan Tablosu
+                SELECT OldRoom AS Room FROM RoomChangePlan WHERE (CAST(RCDate AS DATE) = @Today OR CAST(RecordDate AS DATE) = @Today)
                 UNION
-                SELECT l.New AS Room FROM LOG l
-                INNER JOIN Reservation r ON l.ResId = r.RecId
-                WHERE l.FieldName = 'Room' AND l.Old != l.New
-                  AND l.Old NOT IN ('Basic Blocking', 'Cancel Blocking', '')
-                  AND l.New NOT IN ('Basic Blocking', 'Cancel Blocking', '')
-                  AND CAST(l.ADateTime AS DATE) = @Today AND CAST(r.CheckOutDate AS DATE) = @Today
+                SELECT NewRoom AS Room FROM RoomChangePlan WHERE (CAST(RCDate AS DATE) = @Today OR CAST(RecordDate AS DATE) = @Today)
                 UNION
-                -- 2. Sedna Resmi RC Plan Tablosu (Sadece hedef güne ait planlar)
-                SELECT OldRoom AS Room FROM RoomChangePlan WHERE CAST(RCDate AS DATE) = @Today AND ISNULL(Deleted, 0) = 0
-                UNION
-                SELECT NewRoom AS Room FROM RoomChangePlan WHERE CAST(RCDate AS DATE) = @Today AND ISNULL(Deleted, 0) = 0
-                UNION
-                -- 3. DailyDetail üzerinden fiili Room Change
+                -- 2. DailyDetail üzerinden fiili Room Change: Dün bu odada kalıp bugün başka odaya aktarılanlar
                 SELECT dd_old.Room AS Room
                 FROM DailyDetail dd_new
                 JOIN DailyDetail dd_old ON dd_new.ReservationId = dd_old.ReservationId 
@@ -129,7 +114,7 @@ def get_hk_status(conn) -> pd.DataFrame:
                   AND ISNULL(dd_old.Room, '') <> '' 
                   AND ISNULL(dd_new.Room, '') <> ''
             ) rc_all
-        ),
+            WHERE ISNULL(Room, '') <> ''
         )
         SELECT 
             rm.Room AS [ODA],
@@ -384,25 +369,7 @@ def get_room_changes(conn, target_date=None):
             rc_data.ChangeTime,
             rc_data.Source
         FROM (
-            -- 1. LOG tablosu üzerinden gerçekleşen Oda Değişiklikleri (Sedna Ön Büro Değiştirilen Odalar ile %100 birebir)
-            SELECT 
-                l.Old AS OldRoom, 
-                l.New AS NewRoom,
-                l.ResId AS ReservationId,
-                CONVERT(VARCHAR(5), l.ADateTime, 108) AS ChangeTime,
-                'Fiili RC' AS Source
-            FROM LOG l
-            INNER JOIN Reservation r ON l.ResId = r.RecId
-            WHERE l.FieldName = 'Room'
-              AND l.Old IS NOT NULL AND l.Old != '' AND l.Old NOT IN ('Basic Blocking', 'Cancel Blocking')
-              AND l.New IS NOT NULL AND l.New != '' AND l.New NOT IN ('Basic Blocking', 'Cancel Blocking')
-              AND l.Old != l.New
-              AND CAST(l.ADateTime AS DATE) = @TargetDate
-              AND CAST(r.CheckOutDate AS DATE) = @TargetDate
-
-            UNION
-
-            -- 2. DailyDetail üzerinden gerçekleşmiş fiili Room Change
+            -- 1. DailyDetail üzerinden gerçekleşmiş fiili Room Change
             SELECT 
                 dd_old.Room AS OldRoom, 
                 dd_new.Room AS NewRoom,
@@ -420,7 +387,7 @@ def get_room_changes(conn, target_date=None):
 
             UNION
 
-            -- 3. Sedna RoomChangePlan tablosu (Sadece hedef güne ait planlar)
+            -- 2. Sedna RoomChangePlan tablosu
             SELECT 
                 rcp.OldRoom, 
                 rcp.NewRoom, 
@@ -428,7 +395,7 @@ def get_room_changes(conn, target_date=None):
                 CONVERT(VARCHAR(5), rcp.[Time], 108) AS ChangeTime,
                 'Planlanan RC' AS Source
             FROM RoomChangePlan rcp
-            WHERE CAST(rcp.RCDate AS DATE) = @TargetDate
+            WHERE (CAST(rcp.RCDate AS DATE) = @TargetDate OR CAST(rcp.RecordDate AS DATE) = @TargetDate)
               AND ISNULL(rcp.Deleted, 0) = 0
               AND ISNULL(rcp.OldRoom, '') <> '' 
               AND ISNULL(rcp.NewRoom, '') <> ''
